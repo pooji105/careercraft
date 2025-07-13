@@ -5,12 +5,78 @@
 {% block content %}
 <div class="row">
     <div class="col-12">
-        <h1 class="mb-4">Dashboard</h1>
-        <div class="card">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Dashboard</h1>
+            <span class="badge bg-primary fs-6">{{ current_user.current_role|title if current_user.current_role else 'User' }}</span>
+        </div>
+        
+        <!-- Welcome Card -->
+        <div class="card mb-4">
             <div class="card-body">
-                <h5 class="card-title">Welcome to your CareerCraft Dashboard</h5>
-                <p class="card-text">Dashboard functionality coming soon...</p>
-                <a href="{{ url_for('main.home') }}" class="btn btn-primary">Back to Home</a>
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h4 class="card-title">Welcome back, {{ current_user.name }}!</h4>
+                        <p class="card-text text-muted">
+                            Ready to advance your career? Let's get started with your professional development journey.
+                        </p>
+                        <p class="mb-0">
+                            <small class="text-muted">
+                                <i class="bi bi-calendar me-1"></i>
+                                Member since {{ current_user.created_at.strftime('%B %Y') }}
+                            </small>
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <i class="bi bi-person-circle display-1 text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="bi bi-file-earmark-text display-4 text-primary mb-3"></i>
+                        <h5 class="card-title">Resume Builder</h5>
+                        <p class="card-text">Create or update your professional resume with our easy-to-use builder.</p>
+                        <a href="{{ url_for('resume.resume_builder') }}" class="btn btn-primary">Build Resume</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="bi bi-camera-video display-4 text-success mb-3"></i>
+                        <h5 class="card-title">Interview Prep</h5>
+                        <p class="card-text">Practice interviews and get AI-powered feedback to improve your skills.</p>
+                        <a href="{{ url_for('interview.interview_prep') }}" class="btn btn-success">Practice Now</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="bi bi-search display-4 text-info mb-3"></i>
+                        <h5 class="card-title">Job Tracker</h5>
+                        <p class="card-text">Track your job applications and stay organized in your job search.</p>
+                        <a href="{{ url_for('jobs.job_tracker') }}" class="btn btn-info">Track Jobs</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Activity -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Recent Activity</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">No recent activity yet. Start building your career by creating your first resume!</p>
+                <a href="{{ url_for('resume.resume_builder') }}" class="btn btn-outline-primary">Get Started</a>
             </div>
         </div>
     </div>

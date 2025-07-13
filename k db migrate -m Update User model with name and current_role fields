@@ -1,0 +1,11 @@
+[33mcommit f00e8b051d7e9399952c00de614ee9c12175497a[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m)[m
+Author: Poojitha <poojithasaidurga_marella@srmap.edu.in>
+Date:   Sun Jul 13 14:00:15 2025 +0530
+
+    Add test section to README
+
+[33mcommit 06fa63b1a750c2ab272c59463d2c29d1801312e1[m
+Author: Pooji105 <poojithasaidurga_marella@srmap.edu.in>
+Date:   Sun Jul 13 13:40:20 2025 +0530
+
+    Initial commit: CareerCraft Flask application structure
