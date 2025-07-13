@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}CareerCraft - Home{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto text-center">
+        <h1 class="display-4 fw-bold text-primary mb-4">
+            Welcome to CareerCraft
+        </h1>
+        <p class="lead mb-5">
+            Your comprehensive platform for building resumes, preparing for interviews, and tracking your job applications.
+        </p>
+        
+        <div class="row g-4 mb-5">
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="bi bi-file-earmark-text display-4 text-primary mb-3"></i>
+                        <h5 class="card-title">Resume Builder</h5>
+                        <p class="card-text">Create professional resumes with our easy-to-use builder and templates.</p>
+                        <a href="{{ url_for('resume.resume_builder') }}" class="btn btn-primary">Get Started</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="bi bi-camera-video display-4 text-success mb-3"></i>
+                        <h5 class="card-title">Interview Prep</h5>
+                        <p class="card-text">Practice interviews and get AI-powered feedback to improve your skills.</p>
+                        <a href="{{ url_for('interview.interview_prep') }}" class="btn btn-success">Practice Now</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="bi bi-search display-4 text-info mb-3"></i>
+                        <h5 class="card-title">Job Tracker</h5>
+                        <p class="card-text">Track your job applications and stay organized in your job search.</p>
+                        <a href="{{ url_for('jobs.job_tracker') }}" class="btn btn-info">Track Jobs</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% if not current_user.is_authenticated %}
+        <div class="bg-light p-4 rounded">
+            <h4>Ready to start your career journey?</h4>
+            <p class="mb-3">Join thousands of professionals who have used CareerCraft to advance their careers.</p>
+            <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg me-3">Sign Up Free</a>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary btn-lg">Login</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 
