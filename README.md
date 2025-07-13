@@ -220,3 +220,6 @@ For support, email support@careercraft.com or create an issue in the repository.
 - [ ] Resume sharing and collaboration
 - [ ] Advanced analytics and insights
 - [ ] Mobile app development 
+
+   ## Test Section
+   This is a test change to learn Git!
