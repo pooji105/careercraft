@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block title %}Interview Simulator - CareerCraft{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-7">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h1 class="h4 mb-0">Interview Simulator</h1>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="form-floating mb-3">
+                            <textarea class="form-control" name="profile_input" id="profileInput" rows="4" required placeholder="Paste your resume, job description, or list your skills">{{ profile_input or '' }}</textarea>
+                            <label for="profileInput">Paste your resume, job description, or list your skills</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Generate Interview Questions</button>
+                    </form>
+                </div>
+            </div>
+            {% if questions %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">Your Interview Questions</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <input type="hidden" name="profile_input" value="{{ profile_input }}">
+                        <input type="hidden" name="questions_json" value="{{ questions|tojson }}">
+                        {% for q in questions %}
+                        <div class="form-floating mb-3">
+                            <textarea class="form-control" name="answer_{{ loop.index0 }}" id="answer{{ loop.index0 }}" rows="2" required placeholder="Your answer">{{ answers[loop.index0] if answers else '' }}</textarea>
+                            <label for="answer{{ loop.index0 }}"><strong>Q{{ loop.index }}:</strong> {{ q }}</label>
+                        </div>
+                        {% endfor %}
+                        <button type="submit" class="btn btn-success w-100">Submit Answers for Feedback</button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+            {% if feedback %}
+            <div class="card mt-4 border-info">
+                <div class="card-header bg-info text-white">AI Feedback</div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                    {% for fb in feedback %}
+                        <li class="list-group-item">{{ fb }}</li>
+                    {% endfor %}
+                    </ul>
+                    {% if past_sessions and past_sessions|length > 0 %}
+                        <a href="{{ url_for('interview.export_session_pdf', session_id=past_sessions[0].id) }}" class="btn btn-outline-secondary mt-3 w-100">
+                            <i class="bi bi-download me-1"></i> Download This Session
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            {% if error %}
+            <div class="alert alert-danger alert-dismissible fade show mt-4" role="alert">
+                {{ error }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% if past_sessions and past_sessions|length > 0 %}
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-10">
+            <h3 class="mb-4">Your Past Interview Sessions</h3>
+            <div class="accordion" id="pastSessionsAccordion">
+                {% for session in past_sessions %}
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingSession{{ loop.index }}">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <button class="accordion-button collapsed flex-grow-1" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSession{{ loop.index }}" aria-expanded="false" aria-controls="collapseSession{{ loop.index }}">
+                                <span class="fw-bold">{{ session.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                            </button>
+                            <form method="POST" action="{{ url_for('interview.delete_session', session_id=session.id) }}" class="ms-2" style="display:inline;">
+                                {{ csrf_token() }}
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this interview session?');">Delete</button>
+                            </form>
+                        </div>
+                    </h2>
+                    <div id="collapseSession{{ loop.index }}" class="accordion-collapse collapse" aria-labelledby="headingSession{{ loop.index }}" data-bs-parent="#pastSessionsAccordion">
+                        <div class="accordion-body">
+                            {% set questions = session.questions %}
+                            {% set feedback = session.feedback %}
+                            <div class="mb-3">
+                                <span class="fw-bold">Questions:</span>
+                                <ol>
+                                {% for q in questions %}
+                                    <li>{{ q }}</li>
+                                {% endfor %}
+                                </ol>
+                            </div>
+                            <div class="mb-3">
+                                <span class="fw-bold">AI Feedback:</span>
+                                <ul>
+                                {% for fb in feedback %}
+                                    <li>{{ fb }}</li>
+                                {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

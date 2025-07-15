@@ -94,6 +94,176 @@ document.addEventListener('DOMContentLoaded', function() {
         document.body.classList.add('dark-theme');
     }
 
+    // Resume Builder Step Navigation
+    const steps = document.querySelectorAll('.resume-step');
+    if (steps.length > 0) {
+        let currentStep = 0;
+        function showStep(index) {
+            steps.forEach((step, i) => {
+                step.classList.toggle('d-none', i !== index);
+            });
+        }
+        document.querySelectorAll('.next-step').forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (currentStep < steps.length - 1) {
+                    currentStep++;
+                    showStep(currentStep);
+                }
+            });
+        });
+        document.querySelectorAll('.prev-step').forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (currentStep > 0) {
+                    currentStep--;
+                    showStep(currentStep);
+                }
+            });
+        });
+        showStep(currentStep);
+    }
+
+    // Add Education dynamic fields
+    const educationList = document.getElementById('education-list');
+    const addEducationBtn = document.getElementById('add-education');
+    if (educationList && addEducationBtn) {
+        function addEducationField() {
+            const idx = educationList.children.length;
+            const eduDiv = document.createElement('div');
+            eduDiv.className = 'card mb-2 p-3';
+            eduDiv.innerHTML = `
+                <div class="mb-2"><input type="text" class="form-control" placeholder="Institution" name="edu_institution_${idx}" required></div>
+                <div class="mb-2"><input type="text" class="form-control" placeholder="Degree" name="edu_degree_${idx}" required></div>
+                <div class="mb-2"><input type="text" class="form-control" placeholder="Year" name="edu_year_${idx}"></div>
+                <button type="button" class="btn btn-sm btn-danger remove-edu">Remove</button>
+            `;
+            educationList.appendChild(eduDiv);
+            eduDiv.querySelector('.remove-edu').addEventListener('click', function() {
+                eduDiv.remove();
+            });
+        }
+        addEducationBtn.addEventListener('click', addEducationField);
+    }
+
+    // Add Experience dynamic fields
+    const experienceList = document.getElementById('experience-list');
+    const addExperienceBtn = document.getElementById('add-experience');
+    if (experienceList && addExperienceBtn) {
+        function addExperienceField() {
+            const idx = experienceList.children.length;
+            const expDiv = document.createElement('div');
+            expDiv.className = 'card mb-2 p-3';
+            expDiv.innerHTML = `
+                <div class="mb-2"><input type="text" class="form-control" placeholder="Company" name="exp_company_${idx}" required></div>
+                <div class="mb-2"><input type="text" class="form-control" placeholder="Role" name="exp_role_${idx}" required></div>
+                <div class="mb-2"><input type="text" class="form-control" placeholder="Duration" name="exp_duration_${idx}"></div>
+                <div class="mb-2"><textarea class="form-control" placeholder="Description" name="exp_desc_${idx}"></textarea></div>
+                <button type="button" class="btn btn-sm btn-danger remove-exp">Remove</button>
+            `;
+            experienceList.appendChild(expDiv);
+            expDiv.querySelector('.remove-exp').addEventListener('click', function() {
+                expDiv.remove();
+            });
+        }
+        addExperienceBtn.addEventListener('click', addExperienceField);
+    }
+
+    // Add Projects dynamic fields
+    const projectList = document.getElementById('project-list');
+    const addProjectBtn = document.getElementById('add-project');
+    if (projectList && addProjectBtn) {
+        function addProjectField() {
+            const idx = projectList.children.length;
+            const projDiv = document.createElement('div');
+            projDiv.className = 'card mb-2 p-3';
+            projDiv.innerHTML = `
+                <div class="mb-2"><input type="text" class="form-control" placeholder="Project Title" name="proj_title_${idx}" required></div>
+                <div class="mb-2"><textarea class="form-control" placeholder="Description" name="proj_desc_${idx}"></textarea></div>
+                <button type="button" class="btn btn-sm btn-danger remove-proj">Remove</button>
+            `;
+            projectList.appendChild(projDiv);
+            projDiv.querySelector('.remove-proj').addEventListener('click', function() {
+                projDiv.remove();
+            });
+        }
+        addProjectBtn.addEventListener('click', addProjectField);
+    }
+
+    // Add Skills dynamic fields
+    const skillsList = document.getElementById('skills-list');
+    const addSkillBtn = document.getElementById('add-skill');
+    if (skillsList && addSkillBtn) {
+        function addSkillField() {
+            const idx = skillsList.children.length;
+            const skillDiv = document.createElement('div');
+            skillDiv.className = 'card mb-2 p-3';
+            skillDiv.innerHTML = `
+                <div class="mb-2"><input type="text" class="form-control" placeholder="Skill" name="skill_${idx}" required></div>
+                <button type="button" class="btn btn-sm btn-danger remove-skill">Remove</button>
+            `;
+            skillsList.appendChild(skillDiv);
+            skillDiv.querySelector('.remove-skill').addEventListener('click', function() {
+                skillDiv.remove();
+            });
+        }
+        addSkillBtn.addEventListener('click', addSkillField);
+    }
+
+    // Resume Builder form submission: collect all data and store in hidden input
+    const resumeForm = document.getElementById('resumeForm');
+    if (resumeForm) {
+        resumeForm.addEventListener('submit', function(event) {
+            // Gather personal info
+            const personal = {
+                fullName: document.getElementById('fullName')?.value || '',
+                email: document.getElementById('email')?.value || '',
+                phone: document.getElementById('phone')?.value || '',
+                summary: document.getElementById('summary')?.value || ''
+            };
+
+            // Gather education
+            const education = [];
+            document.querySelectorAll('#education-list > .card').forEach(card => {
+                education.push({
+                    institution: card.querySelector('input[name^="edu_institution_"]')?.value || '',
+                    degree: card.querySelector('input[name^="edu_degree_"]')?.value || '',
+                    year: card.querySelector('input[name^="edu_year_"]')?.value || ''
+                });
+            });
+
+            // Gather experience
+            const experience = [];
+            document.querySelectorAll('#experience-list > .card').forEach(card => {
+                experience.push({
+                    company: card.querySelector('input[name^="exp_company_"]')?.value || '',
+                    role: card.querySelector('input[name^="exp_role_"]')?.value || '',
+                    duration: card.querySelector('input[name^="exp_duration_"]')?.value || '',
+                    description: card.querySelector('textarea[name^="exp_desc_"]')?.value || ''
+                });
+            });
+
+            // Gather projects
+            const projects = [];
+            document.querySelectorAll('#project-list > .card').forEach(card => {
+                projects.push({
+                    title: card.querySelector('input[name^="proj_title_"]')?.value || '',
+                    description: card.querySelector('textarea[name^="proj_desc_"]')?.value || ''
+                });
+            });
+
+            // Gather skills
+            const skills = [];
+            document.querySelectorAll('#skills-list > .card').forEach(card => {
+                skills.push(card.querySelector('input[name^="skill_"]')?.value || '');
+            });
+
+            // Store all in hidden input
+            const resumeDataInput = document.getElementById('resume_data');
+            if (resumeDataInput) {
+                resumeDataInput.value = JSON.stringify({ personal, education, experience, projects, skills });
+            }
+        });
+    }
+
     // Utility functions
     window.CareerCraft = {
         // Show notification

@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}Resume Analyzer - CareerCraft{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h1 class="h4 mb-0">Resume Analyzer</h1>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="form-floating mb-3">
+                            <input class="form-control" type="file" id="resumeFile" name="resume_file" accept=".pdf,.txt" required placeholder="Upload your resume">
+                            <label for="resumeFile">Upload your resume (PDF or TXT)</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Analyze Resume</button>
+                    </form>
+                    {% if feedback %}
+                    <div class="card mt-4 border-info">
+                        <div class="card-header bg-info text-white">AI Feedback</div>
+                        <div class="card-body">
+                            <pre style="white-space: pre-wrap;">{{ feedback }}</pre>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if error %}
+                    <div class="alert alert-danger alert-dismissible fade show mt-4" role="alert">
+                        {{ error }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% if past_uploads and past_uploads|length > 0 %}
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-10">
+            <h3 class="mb-3">Past Uploaded Resumes & AI Feedback</h3>
+            <div class="accordion" id="pastUploadsAccordion">
+                {% for upload in past_uploads %}
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading{{ loop.index }}">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}" aria-expanded="false" aria-controls="collapse{{ loop.index }}">
+                            <span class="fw-bold">{{ upload.filename }}</span>
+                            <span class="text-muted ms-3">{{ upload.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                        </button>
+                    </h2>
+                    <div id="collapse{{ loop.index }}" class="accordion-collapse collapse" aria-labelledby="heading{{ loop.index }}" data-bs-parent="#pastUploadsAccordion">
+                        <div class="accordion-body">
+                            <strong>AI Feedback:</strong>
+                            <pre style="white-space: pre-wrap;">{{ upload.suggestions[:300] }}{% if upload.suggestions|length > 300 %}...{% endif %}</pre>
+                            <button class="btn btn-link p-0" type="button" data-bs-toggle="collapse" data-bs-target="#fullFeedback{{ loop.index }}" aria-expanded="false" aria-controls="fullFeedback{{ loop.index }}">
+                                View Full Analysis
+                            </button>
+                            <div class="collapse mt-2" id="fullFeedback{{ loop.index }}">
+                                <pre style="white-space: pre-wrap;">{{ upload.suggestions }}</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

@@ -37,13 +37,15 @@ def create_app():
     from app.routes.resume import resume_bp
     from app.routes.interview import interview_bp
     from app.routes.jobs import jobs_bp
+    from app.routes.skills import skills_bp
     
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(dashboard_bp, url_prefix='/dashboard')
-    app.register_blueprint(resume_bp, url_prefix='/resume')
+    app.register_blueprint(resume_bp)  # No url_prefix so /resume-builder works
     app.register_blueprint(interview_bp, url_prefix='/interview')
     app.register_blueprint(jobs_bp, url_prefix='/jobs')
+    app.register_blueprint(skills_bp)
     
     # Import models to ensure they are registered with SQLAlchemy
     from app.models import User

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Resume</title>
+    <style>
+        body {
+            font-family: 'Georgia', 'Times New Roman', Times, serif;
+            color: #222;
+            margin: 0;
+            padding: 0 36px 36px 36px;
+            font-size: 15px;
+            background: #fff;
+        }
+        .header {
+            text-align: center;
+            margin-top: 24px;
+            margin-bottom: 28px;
+        }
+        .name {
+            font-size: 2.2em;
+            font-weight: bold;
+            letter-spacing: 1px;
+            margin-bottom: 2px;
+        }
+        .title {
+            font-size: 1.1em;
+            color: #444;
+            margin-bottom: 8px;
+        }
+        .contact {
+            font-size: 1em;
+            color: #333;
+            margin-bottom: 0;
+        }
+        .summary {
+            color: #666;
+            font-size: 1em;
+            margin-top: 10px;
+            margin-bottom: 0;
+        }
+        .section {
+            margin-bottom: 28px;
+            page-break-inside: avoid;
+        }
+        .section-title {
+            font-size: 1.08em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #2a2a2a;
+            border-bottom: 1px solid #d3d3d3;
+            padding-bottom: 3px;
+            margin-bottom: 12px;
+        }
+        .item {
+            margin-bottom: 14px;
+        }
+        .label {
+            font-weight: bold;
+            color: #222;
+        }
+        .muted {
+            color: #888;
+            font-size: 0.97em;
+        }
+        ul, ol {
+            margin: 0 0 0 22px;
+            padding: 0;
+        }
+        li {
+            margin-bottom: 5px;
+        }
+        .bullet-list {
+            list-style-type: disc;
+        }
+        .section-content {
+            margin-left: 0;
+        }
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+            }
+            .section {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="name">{{ data.personal.fullName }}</div>
+        {% if data.personal.title %}<div class="title">{{ data.personal.title }}</div>{% endif %}
+        <div class="contact">{{ data.personal.email }}{% if data.personal.phone %} | {{ data.personal.phone }}{% endif %}</div>
+        {% if data.personal.summary %}<div class="summary">{{ data.personal.summary }}</div>{% endif %}
+    </div>
+
+    <div class="section">
+        <div class="section-title">Education</div>
+        <div class="section-content">
+        {% if data.education and data.education|length > 0 %}
+            <ul class="bullet-list">
+            {% for edu in data.education %}
+                <li class="item">
+                    <span class="label">{{ edu.degree }}</span> at {{ edu.institution }}
+                    {% if edu.year %}<span class="muted"> ({{ edu.year }})</span>{% endif %}
+                </li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            <div class="muted">No education details provided.</div>
+        {% endif %}
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Experience</div>
+        <div class="section-content">
+        {% if data.experience and data.experience|length > 0 %}
+            <ul class="bullet-list">
+            {% for exp in data.experience %}
+                <li class="item">
+                    <span class="label">{{ exp.role }}</span> at {{ exp.company }}
+                    {% if exp.duration %}<span class="muted"> ({{ exp.duration }})</span>{% endif %}<br>
+                    {% if exp.description %}<span>{{ exp.description }}</span>{% endif %}
+                </li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            <div class="muted">No experience details provided.</div>
+        {% endif %}
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Projects</div>
+        <div class="section-content">
+        {% if data.projects and data.projects|length > 0 %}
+            <ul class="bullet-list">
+            {% for proj in data.projects %}
+                <li class="item">
+                    <span class="label">{{ proj.title }}</span><br>
+                    {% if proj.description %}<span>{{ proj.description }}</span>{% endif %}
+                </li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            <div class="muted">No project details provided.</div>
+        {% endif %}
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Skills</div>
+        <div class="section-content">
+        {% if data.skills and data.skills|length > 0 %}
+            <ul class="bullet-list">
+            {% for skill in data.skills %}
+                <li class="item">
+                    <span class="label">{{ skill.name }}</span>
+                    {% if skill.category %}<span class="muted"> ({{ skill.category }})</span>{% endif %}
+                    {% if skill.rating %}<span class="muted"> - Rating: {{ skill.rating }}</span>{% endif %}
+                </li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            <div class="muted">No skills provided.</div>
+        {% endif %}
+        </div>
+    </div>
+</body>
+</html> 

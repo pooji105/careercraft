@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, SelectField
+from wtforms import StringField, PasswordField, SubmitField, SelectField, IntegerField
 from wtforms.validators import DataRequired, Email, Length, EqualTo, ValidationError
 from app.models import User
 
@@ -47,4 +47,10 @@ class LoginForm(FlaskForm):
     password = PasswordField('Password', validators=[
         DataRequired()
     ])
-    submit = SubmitField('Login') 
+    submit = SubmitField('Login')
+
+class SkillForm(FlaskForm):
+    name = StringField('Skill Name', validators=[DataRequired(), Length(min=1, max=100)])
+    category = StringField('Category', validators=[Length(max=100)])
+    rating = IntegerField('Rating (1-5)', validators=[DataRequired()])
+    submit = SubmitField('Save Skill') 

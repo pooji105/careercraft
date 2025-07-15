@@ -1,0 +1,72 @@
+<html>
+<body style="font-family: Arial, Helvetica, sans-serif; background: #fff; color: #222; margin: 0; padding: 0;">
+  <div style="width: 90%; max-width: 800px; margin: 32px auto; background: #fff; padding: 32px 24px; border: 1px solid #e0e0e0;">
+    <!-- Header -->
+    <div style="text-align: center; margin-bottom: 10px;">
+      <h1 style="margin: 0 0 0.2em 0; font-size: 2.2em; font-weight: bold;">{{ personal.name }}</h1>
+      <div style="color: #444; font-size: 1em; margin-bottom: 0.5em;">{{ personal.email }}{% if personal.phone %} | {{ personal.phone }}{% endif %}</div>
+    </div>
+    {% if personal.summary %}
+    <div style="text-align: center; margin-bottom: 18px;">
+      <div style="font-size: 1.05em; color: #333;">{{ personal.summary }}</div>
+    </div>
+    {% endif %}
+    <hr style="border: none; border-top: 1px solid #bbb; margin: 18px 0 18px 0;"/>
+    <!-- Education -->
+    {% if education and education|length > 0 %}
+    <div style="margin-bottom: 18px;">
+      <div style="color: #004080; font-size: 1.1em; font-weight: bold; margin-bottom: 6px;">Education</div>
+      <ul style="margin: 0 0 0 1.2em; padding: 0;">
+        {% for edu in education %}
+        <li style="margin-bottom: 0.4em;">
+          <span style="font-weight: bold;">{{ edu.degree }}</span> at <span style="color: #444;">{{ edu.institution }}</span>{% if edu.year %} <span style="color: #666;">({{ edu.year }})</span>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    <hr style="border: none; border-top: 1px solid #bbb; margin: 18px 0 18px 0;"/>
+    {% endif %}
+    <!-- Experience -->
+    {% if experience and experience|length > 0 %}
+    <div style="margin-bottom: 18px;">
+      <div style="color: #004080; font-size: 1.1em; font-weight: bold; margin-bottom: 6px;">Experience</div>
+      <ul style="margin: 0 0 0 1.2em; padding: 0;">
+        {% for exp in experience %}
+        <li style="margin-bottom: 0.4em;">
+          <span style="font-weight: bold;">{{ exp.role }}</span> at <span style="color: #444;">{{ exp.company }}</span>{% if exp.duration %} <span style="color: #666;">({{ exp.duration }})</span>{% endif %}
+          {% if exp.description %}<div style="margin-left: 0.5em; color: #222;">{{ exp.description }}</div>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    <hr style="border: none; border-top: 1px solid #bbb; margin: 18px 0 18px 0;"/>
+    {% endif %}
+    <!-- Projects -->
+    {% if projects and projects|length > 0 %}
+    <div style="margin-bottom: 18px;">
+      <div style="color: #004080; font-size: 1.1em; font-weight: bold; margin-bottom: 6px;">Projects</div>
+      <ul style="margin: 0 0 0 1.2em; padding: 0;">
+        {% for proj in projects %}
+        <li style="margin-bottom: 0.4em;">
+          <span style="font-weight: bold;">{{ proj.title }}</span>
+          {% if proj.description %}<div style="margin-left: 0.5em; color: #222;">{{ proj.description }}</div>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    <hr style="border: none; border-top: 1px solid #bbb; margin: 18px 0 18px 0;"/>
+    {% endif %}
+    <!-- Skills -->
+    {% if skills and skills|length > 0 %}
+    <div style="margin-bottom: 8px;">
+      <div style="color: #004080; font-size: 1.1em; font-weight: bold; margin-bottom: 6px;">Skills</div>
+      <div style="margin-top: 4px;">
+        {% for skill in skills %}
+        <span style="display: inline-block; border: 1px solid #bbb; background: #f7f7f7; color: #222; border-radius: 6px; padding: 2px 10px; margin: 2px 4px 2px 0; font-size: 0.98em;">{{ skill.name }}</span>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</body>
+</html> 

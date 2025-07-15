@@ -21,53 +21,69 @@
             <a class="navbar-brand fw-bold" href="{{ url_for('main.home') }}">
                 <i class="bi bi-briefcase-fill me-2"></i>CareerCraft
             </a>
-            
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
                     aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('main.home') }}">
+                        <a class="nav-link{% if request.path == '/' %} active{% endif %}" href="{{ url_for('main.home') }}">
                             <i class="bi bi-house-door me-1"></i>Home
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('dashboard.dashboard') }}">
+                        <a class="nav-link{% if request.path.startswith('/dashboard') %} active{% endif %}" href="{{ url_for('dashboard.dashboard') }}">
                             <i class="bi bi-speedometer2 me-1"></i>Dashboard
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('resume.resume_builder') }}">
+                        <a class="nav-link{% if request.path.startswith('/resume-builder') %} active{% endif %}" href="{{ url_for('resume.multi_step_resume_builder') }}">
                             <i class="bi bi-file-earmark-text me-1"></i>Resume Builder
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('interview.interview_prep') }}">
-                            <i class="bi bi-camera-video me-1"></i>Interview
+                        <a class="nav-link{% if request.path.startswith('/resume-analyzer') %} active{% endif %}" href="{{ url_for('resume.resume_analyzer') }}">
+                            <i class="bi bi-graph-up me-1"></i>Resume Analyzer
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('jobs.job_tracker') }}">
-                            <i class="bi bi-search me-1"></i>Job Tracker
+                        <a class="nav-link{% if request.path.startswith('/job-matcher') %} active{% endif %}" href="{{ url_for('resume.job_matcher') }}">
+                            <i class="bi bi-briefcase me-1"></i>Job Matcher
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link{% if request.path.startswith('/interview-simulator') %} active{% endif %}" href="{{ url_for('interview.interview_simulator') }}">
+                            <i class="bi bi-chat-dots me-1"></i>Interview Practice
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link{% if request.path.startswith('/skills') %} active{% endif %}" href="{{ url_for('skills.skills') }}">
+                            <i class="bi bi-stars me-1"></i>Skill Tracker
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link{% if request.path.startswith('/job-tracker') or request.path == '/jobs' %} active{% endif %}" href="{{ url_for('jobs.job_tracker') }}">
+                            <i class="bi bi-clipboard-data me-1"></i>Job Tracker
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link{% if request.path.startswith('/resources') %} active{% endif %}" href="{{ url_for('resume.multi_step_resume_builder') }}">
+                            <i class="bi bi-journal-bookmark me-1"></i>Resources
                         </a>
                     </li>
                 </ul>
-                
-                <ul class="navbar-nav">
+                <ul class="navbar-nav mb-2 mb-lg-0 align-items-center">
+                    <li class="nav-item me-2">
+                        <button id="themeToggle" class="btn btn-outline-light btn-sm" title="Toggle dark/light mode">
+                            <i class="bi bi-moon-stars-fill" id="themeIcon"></i>
+                        </button>
+                    </li>
                     {% if current_user.is_authenticated %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" 
-                               data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-person-circle me-1"></i>{{ current_user.name }}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('auth.logout') }}">
+                                <i class="bi bi-box-arrow-right me-1"></i>Logout
                             </a>
-                            <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                                <li><a class="dropdown-item" href="{{ url_for('dashboard.dashboard') }}">Profile</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Logout</a></li>
-                            </ul>
                         </li>
                     {% else %}
                         <li class="nav-item">
@@ -85,6 +101,34 @@
             </div>
         </div>
     </nav>
+    <script>
+    // Dark/Light mode toggle
+    document.addEventListener('DOMContentLoaded', function() {
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        let theme = localStorage.getItem('theme') || (prefersDark ? 'dark' : 'light');
+        setTheme(theme);
+        themeToggle.onclick = function() {
+            theme = (theme === 'dark') ? 'light' : 'dark';
+            setTheme(theme);
+            localStorage.setItem('theme', theme);
+        };
+        function setTheme(mode) {
+            if (mode === 'dark') {
+                document.body.classList.add('bg-dark', 'text-light');
+                document.body.classList.remove('bg-light', 'text-dark');
+                themeIcon.classList.remove('bi-moon-stars-fill');
+                themeIcon.classList.add('bi-brightness-high-fill');
+            } else {
+                document.body.classList.remove('bg-dark', 'text-light');
+                document.body.classList.add('bg-light', 'text-dark');
+                themeIcon.classList.add('bi-moon-stars-fill');
+                themeIcon.classList.remove('bi-brightness-high-fill');
+            }
+        }
+    });
+    </script>
 
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}

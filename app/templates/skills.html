@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}Skill Tracker - CareerCraft{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Skill Tracker</h1>
+    <form method="POST" class="mb-4">
+        {{ form.csrf_token }}
+        <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Skill Name</label>
+                {{ form.name(class_='form-control', value=edit_skill.name if edit_skill else '') }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Category</label>
+                {{ form.category(class_='form-control', value=edit_skill.category if edit_skill else '') }}
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Rating (1-5)</label>
+                {{ form.rating(class_='form-control', min=1, max=5, value=edit_skill.rating if edit_skill else '') }}
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-{{ 'warning' if edit_skill else 'primary' }} w-100">{{ 'Update' if edit_skill else 'Add' }} Skill</button>
+            </div>
+            {% if edit_skill %}
+            <div class="col-md-2">
+                <a href="{{ url_for('skills.skills') }}" class="btn btn-secondary w-100">Cancel</a>
+            </div>
+            {% endif %}
+        </div>
+        {% if error %}
+        <div class="alert alert-danger mt-2">{{ error }}</div>
+        {% endif %}
+    </form>
+    <h4 class="mb-3">Your Skills</h4>
+    <div class="row g-3">
+        {% for skill in skills %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow-sm mb-2">
+                <div class="card-body d-flex flex-column align-items-start">
+                    <span class="badge bg-primary mb-2">{{ skill.name }}</span>
+                    <span class="badge bg-info text-dark mb-2">{{ skill.category }}</span>
+                    <div class="w-100 mb-2">
+                        <div class="progress" style="height: 1.2rem;">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ skill.rating * 20 }}%;" aria-valuenow="{{ skill.rating }}" aria-valuemin="1" aria-valuemax="5">{{ skill.rating }}/5</div>
+                        </div>
+                    </div>
+                    <div class="mt-2 w-100 d-flex justify-content-end">
+                        <a href="{{ url_for('skills.skills', edit=skill.id) }}" class="btn btn-sm btn-outline-warning me-2">Edit</a>
+                        <form method="POST" action="{{ url_for('skills.delete_skill', skill_id=skill.id) }}" style="display:inline;">
+                            {{ form.csrf_token }}
+                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this skill?');">Delete</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %} 

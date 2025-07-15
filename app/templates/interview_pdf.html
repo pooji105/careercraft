@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Interview Session Export</title>
+    <style>
+        body { font-family: 'Georgia', serif; margin: 2em; }
+        h1, h2 { text-align: center; }
+        .section { margin-bottom: 2em; }
+        .question { font-weight: bold; margin-top: 1em; }
+        .answer, .feedback { margin-left: 1em; }
+        .feedback-list { margin-left: 1.5em; }
+        .timestamp { text-align: right; color: #888; font-size: 0.9em; }
+        .divider { border-bottom: 1px solid #ccc; margin: 2em 0; }
+    </style>
+</head>
+<body>
+    <h1>Interview Session</h1>
+    <div class="timestamp">Date: {{ session.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+    <div class="divider"></div>
+    <div class="section">
+        <h2>Questions & Answers</h2>
+        {% for q, a in zip(questions, answers) %}
+            <div class="question">Q{{ loop.index }}: {{ q }}</div>
+            <div class="answer"><strong>Your Answer:</strong> {{ a }}</div>
+        {% endfor %}
+    </div>
+    <div class="divider"></div>
+    <div class="section">
+        <h2>AI Feedback</h2>
+        <ul class="feedback-list">
+        {% for fb in feedback %}
+            <li class="feedback">{{ fb }}</li>
+        {% endfor %}
+        </ul>
+    </div>
+</body>
+</html> 

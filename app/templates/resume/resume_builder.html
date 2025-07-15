@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}{% if edit_mode %}Edit Resume{% else %}Resume Builder{% endif %} - CareerCraft{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-10 col-xl-8">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h2 class="mb-4 border-bottom pb-2">{% if edit_mode %}Edit Resume{% else %}Resume Builder{% endif %}</h2>
+                    <form id="resumeForm" method="POST" novalidate>
+                        <div id="step-1" class="resume-step">
+                            <h4 class="mb-3 border-bottom pb-1">Personal Information</h4>
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="fullName" placeholder="Full Name" required>
+                                        <label for="fullName">Full Name</label>
+                                        <div class="invalid-feedback">Please enter your full name.</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="email" class="form-control" id="email" placeholder="Email" required>
+                                        <label for="email">Email</label>
+                                        <div class="invalid-feedback">Please enter a valid email address.</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="phone" placeholder="Phone">
+                                        <label for="phone">Phone</label>
+                                        <div class="form-text">Optional, but helps recruiters contact you.</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <textarea class="form-control" id="summary" placeholder="Professional Summary" style="height: 100px"></textarea>
+                                        <label for="summary">Professional Summary</label>
+                                        <div class="form-text">Briefly describe your background and goals.</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-end">
+                                <button type="button" class="btn btn-primary next-step">Next</button>
+                            </div>
+                        </div>
+                        <div id="step-2" class="resume-step d-none">
+                            <h4 class="mb-3 border-bottom pb-1">Education</h4>
+                            <div id="education-list"></div>
+                            <button type="button" class="btn btn-outline-secondary mb-3" id="add-education">Add Education</button>
+                            <div class="d-flex justify-content-between">
+                                <button type="button" class="btn btn-secondary prev-step">Previous</button>
+                                <button type="button" class="btn btn-primary next-step">Next</button>
+                            </div>
+                        </div>
+                        <div id="step-3" class="resume-step d-none">
+                            <h4 class="mb-3 border-bottom pb-1">Experience</h4>
+                            <div id="experience-list"></div>
+                            <button type="button" class="btn btn-outline-secondary mb-3" id="add-experience">Add Experience</button>
+                            <div class="d-flex justify-content-between">
+                                <button type="button" class="btn btn-secondary prev-step">Previous</button>
+                                <button type="button" class="btn btn-primary next-step">Next</button>
+                            </div>
+                        </div>
+                        <div id="step-4" class="resume-step d-none">
+                            <h4 class="mb-3 border-bottom pb-1">Projects</h4>
+                            <div id="project-list"></div>
+                            <button type="button" class="btn btn-outline-secondary mb-3" id="add-project">Add Project</button>
+                            <div class="d-flex justify-content-between">
+                                <button type="button" class="btn btn-secondary prev-step">Previous</button>
+                                <button type="button" class="btn btn-primary next-step">Next</button>
+                            </div>
+                        </div>
+                        <div id="step-5" class="resume-step d-none">
+                            <h4 class="mb-3 border-bottom pb-1">Skills</h4>
+                            <div id="skills-list"></div>
+                            <button type="button" class="btn btn-outline-secondary mb-3" id="add-skill">Add Skill</button>
+                            <div class="d-flex justify-content-between">
+                                <button type="button" class="btn btn-secondary prev-step">Previous</button>
+                                <button type="submit" class="btn btn-success">{% if edit_mode %}Update Resume{% else %}Finish & Save{% endif %}</button>
+                            </div>
+                        </div>
+                        <input type="hidden" name="resume_data" id="resume_data">
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+// Pre-fill form with existing data if in edit mode
+{% if edit_mode and existing_data %}
+const existingData = {{ existing_data|tojson|safe }};
+
+// Pre-fill personal information
+if (existingData.personal) {
+    document.getElementById('fullName').value = existingData.personal.fullName || '';
+    document.getElementById('email').value = existingData.personal.email || '';
+    document.getElementById('phone').value = existingData.personal.phone || '';
+    document.getElementById('summary').value = existingData.personal.summary || '';
+}
+
+// Pre-fill education
+if (existingData.education && existingData.education.length > 0) {
+    existingData.education.forEach(edu => {
+        const idx = educationList.children.length;
+        educationList.insertAdjacentHTML('beforeend', `
+            <div class="card mb-2 p-3">
+                <div class="mb-2"><input type="text" class="form-control" placeholder="Institution" name="edu_institution_${idx}" value="${edu.institution || ''}" required></div>
+                <div class="mb-2"><input type="text" class="form-control" placeholder="Degree" name="edu_degree_${idx}" value="${edu.degree || ''}" required></div>
+                <div class="mb-2"><input type="text" class="form-control" placeholder="Year" name="edu_year_${idx}" value="${edu.year || ''}"></div>
+                <button type="button" class="btn btn-sm btn-danger remove-edu">Remove</button>
+            </div>
+        `);
+    });
+    updateRemoveButtons('remove-edu', educationList);
+}
+
+// Pre-fill experience
+if (existingData.experience && existingData.experience.length > 0) {
+    existingData.experience.forEach(exp => {
+        const idx = experienceList.children.length;
+        experienceList.insertAdjacentHTML('beforeend', `
+            <div class="card mb-2 p-3">
+                <div class="mb-2"><input type="text" class="form-control" placeholder="Company" name="exp_company_${idx}" value="${exp.company || ''}" required></div>
+                <div class="mb-2"><input type="text" class="form-control" placeholder="Role" name="exp_role_${idx}" value="${exp.role || ''}" required></div>
+                <div class="mb-2"><input type="text" class="form-control" placeholder="Duration" name="exp_duration_${idx}" value="${exp.duration || ''}"></div>
+                <div class="mb-2"><textarea class="form-control" placeholder="Description" name="exp_desc_${idx}">${exp.description || ''}</textarea></div>
+                <button type="button" class="btn btn-sm btn-danger remove-exp">Remove</button>
+            </div>
+        `);
+    });
+    updateRemoveButtons('remove-exp', experienceList);
+}
+
+// Pre-fill projects
+if (existingData.projects && existingData.projects.length > 0) {
+    existingData.projects.forEach(proj => {
+        const idx = projectList.children.length;
+        projectList.insertAdjacentHTML('beforeend', `
+            <div class="card mb-2 p-3">
+                <div class="mb-2"><input type="text" class="form-control" placeholder="Project Title" name="proj_title_${idx}" value="${proj.title || ''}" required></div>
+                <div class="mb-2"><textarea class="form-control" placeholder="Description" name="proj_desc_${idx}">${proj.description || ''}</textarea></div>
+                <button type="button" class="btn btn-sm btn-danger remove-proj">Remove</button>
+            </div>
+        `);
+    });
+    updateRemoveButtons('remove-proj', projectList);
+}
+
+// Pre-fill skills
+if (existingData.skills && existingData.skills.length > 0) {
+    existingData.skills.forEach(skill => {
+        const idx = skillsList.children.length;
+        skillsList.insertAdjacentHTML('beforeend', `
+            <div class="card mb-2 p-3">
+                <div class="mb-2"><input type="text" class="form-control" placeholder="Skill" name="skill_${idx}" value="${skill || ''}" required></div>
+                <button type="button" class="btn btn-sm btn-danger remove-skill">Remove</button>
+            </div>
+        `);
+    });
+    updateRemoveButtons('remove-skill', skillsList);
+}
+{% endif %}
+
+</script>
+{% endblock %}
