@@ -12,6 +12,7 @@
                 </div>
                 <div class="card-body">
                     <form id="jobMatcherForm" method="POST" enctype="multipart/form-data">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <div class="form-floating mb-3">
                             <input class="form-control" type="file" id="resumeFile" name="resume_file" accept=".pdf,.txt" placeholder="Upload your resume">
                             <label for="resumeFile">Upload your resume (PDF or TXT)</label>
@@ -39,6 +40,12 @@
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                     {% endif %}
+                    {% if error_message %}
+                    <div class="alert alert-warning mt-3">
+                        <strong>Debug Info:</strong>
+                        <pre style="white-space: pre-wrap;">{{ error_message }}</pre>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -46,12 +53,20 @@
     {% if roles %}
     <div class="mt-5">
         <h3 class="mb-4">Your Matched Roles</h3>
+        {% if roles and roles[0] is string %}
+        <ul class="list-group mb-4">
+            {% for role in roles %}
+            <li class="list-group-item">{{ role }}</li>
+            {% endfor %}
+        </ul>
+        {% else %}
         <div class="row g-4">
             {% for role in roles %}
             <div class="col-12 col-md-6 col-lg-4">
                 <div class="card h-100 shadow-sm">
                     <div class="card-header bg-success text-white fw-bold fs-5 text-center">{{ role.role or role.job_title }}</div>
                     <div class="card-body">
+                        {% if role.skills %}
                         <div class="mb-3">
                             <span class="fw-bold">Required Skills:</span>
                             <div class="mb-2">
@@ -60,6 +75,7 @@
                                 {% endfor %}
                             </div>
                         </div>
+                        {% endif %}
                         {% if role.certifications %}
                         <div class="mb-3">
                             <span class="fw-bold">Recommended Certifications / Resources:</span>
@@ -89,6 +105,7 @@
             </div>
             {% endfor %}
         </div>
+        {% endif %}
     </div>
     {% endif %}
     {% if past_matches and past_matches|length > 0 %}

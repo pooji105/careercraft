@@ -188,6 +188,7 @@ def resume_analyzer():
 def job_matcher():
     roles = None
     error = None
+    error_message = None
     input_text = ''
     if request.method == 'POST':
         file = request.files.get('resume_file')
@@ -229,20 +230,12 @@ def job_matcher():
             ai_result = match_job_roles(input_text)
             if 'roles' in ai_result:
                 roles = ai_result['roles']
-                # Store each job match in JobMatch
-                for role in roles:
-                    job_title = role.get('role') or role.get('job_title') or ''
-                    skills = ', '.join(role.get('skills', [])) if isinstance(role.get('skills'), list) else str(role.get('skills', ''))
-                    certs = ', '.join(role.get('certifications', [])) if isinstance(role.get('certifications'), list) else str(role.get('certifications', ''))
-                    job_match = JobMatch(user_id=current_user.id, job_title=job_title, skills=skills, certifications=certs)
-                    db.session.add(job_match)
-                # Store match history
-                import json
-                history = JobMatchHistory(user_id=current_user.id, input_text=input_text, matched_roles_json=json.dumps(roles))
-                db.session.add(history)
-                db.session.commit()
+                # Normalize: if roles is a list of strings, convert to list of dicts with all keys
+                if roles and isinstance(roles[0], str):
+                    roles = [{'job_title': r, 'skills': None, 'certifications': None} for r in roles]
             else:
                 error = ai_result.get('error', 'Unknown error from AI analysis.')
+                error_message = ai_result.get('raw', None)
     # Fetch all past job matches for this user, most recent first
     past_matches = JobMatch.query.filter_by(user_id=current_user.id).order_by(JobMatch.created_at.desc()).all()
     raw_histories = JobMatchHistory.query.filter_by(user_id=current_user.id).order_by(JobMatchHistory.created_at.desc()).all()
@@ -256,7 +249,7 @@ def job_matcher():
         }
         for hist in raw_histories
     ]
-    return render_template('resume/job_matcher.html', roles=roles, error=error, past_matches=past_matches, match_histories=parsed_match_histories)
+    return render_template('resume/job_matcher.html', roles=roles, error=error, error_message=error_message, past_matches=past_matches, match_histories=parsed_match_histories)
 
 @resume_bp.route('/job-matcher/delete/<int:match_id>', methods=['POST'])
 @login_required
@@ -291,4 +284,62 @@ def download_job_match_history():
         return redirect(url_for('resume.job_matcher'))
     file_data = export_job_match_history_txt(histories)
     from flask import send_file
-    return send_file(file_data, as_attachment=True, download_name='job_match_history.txt', mimetype='text/plain') 
+    return send_file(file_data, as_attachment=True, download_name='job_match_history.txt', mimetype='text/plain')
+
+@resume_bp.route('/download-resume')
+@login_required
+def download_resume():
+    user_data = {
+        "name": "Poojitha",
+        "email": "poojithasaidurga_marella@srmup.edu.in",
+        "phone": "9391028218",
+        "linkedin": "linkedin.com/in/poojitha",
+        "github": "github.com/pooji105",
+        "summary": "Enthusiastic developer with internship experience...",
+        "skills": {
+            "Programming": ["Python", "C++", "SQL"],
+            "Web Dev": ["HTML", "CSS", "Flask"],
+            "Tools": ["Figma", "Git", "Postman"]
+        },
+        "work_experience": [
+            {
+                "title": "Intern",
+                "company": "Edubot",
+                "duration": "Jun 2025 – Jul 2025",
+                "description": [
+                    "Worked on career recommendation engine.",
+                    "Integrated OpenRouter API with Flask backend."
+                ]
+            }
+        ],
+        "projects": [
+            {
+                "title": "CareerCraft – Flask",
+                "tech": "Flask, PostgreSQL",
+                "description": [
+                    "Built resume builder and AI job matcher.",
+                    "Integrated skill gap analyzer and interview simulator."
+                ]
+            }
+        ],
+        "education": [
+            {
+                "degree": "B.Tech CSE",
+                "institution": "SRM University – AP",
+                "years": "2022 – 2026",
+                "cgpa": "8.3"
+            },
+            {
+                "degree": "Junior College",
+                "institution": "Narayana",
+                "years": "2020 – 2022",
+                "cgpa": "94.9"
+            }
+        ]
+    }
+
+    html = render_template("resume/resume_template.html", **user_data)
+    result = io.BytesIO()
+    pisa.CreatePDF(html, dest=result)
+    result.seek(0)
+    return send_file(result, download_name="resume.pdf", as_attachment=True) 
