@@ -286,6 +286,32 @@ def download_job_match_history():
     from flask import send_file
     return send_file(file_data, as_attachment=True, download_name='job_match_history.txt', mimetype='text/plain')
 
+@resume_bp.route('/download-matched-roles', methods=['POST'])
+def download_matched_roles():
+    from flask import send_file, request
+    import io, json
+    roles = request.form.get("roles")
+    roles_list = json.loads(roles)
+
+    output = io.StringIO()
+    for role in roles_list:
+        output.write(f"Job Title: {role.get('job_title')}\n")
+        if role.get("skills"):
+            output.write(f"Skills: {', '.join(role['skills'])}\n")
+        if role.get("certifications"):
+            output.write(f"Certifications: {', '.join(role['certifications'])}\n")
+        output.write("\n")
+
+    buffer = io.BytesIO()
+    buffer.write(output.getvalue().encode())
+    buffer.seek(0)
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name="job_suggestions.txt",
+        mimetype="text/plain"
+    )
+
 @resume_bp.route('/download-resume')
 @login_required
 def download_resume():

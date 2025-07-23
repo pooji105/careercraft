@@ -50,18 +50,25 @@ def analyze_resume(text):
 
 
 def match_job_roles(input_text):
+    import re
+    import json
     prompt = f"""
-Based on this resume content or interests: {input_text}
+Based on the following skills or resume content, suggest 5–7 relevant job roles.
+For each job role, return the response in the following JSON format:
 
-Suggest 5 to 7 matching job roles in a clear bullet-point list like:
+[
+  {{
+    "job_title": "Job Title",
+    "skills": ["Skill1", "Skill2", "Skill3"],
+    "certifications": ["Cert1", "Cert2"]
+  }},
+  ...
+]
 
-- Software Developer  
-- Frontend Engineer  
-- Data Analyst  
-- AI/ML Engineer  
-- DevOps Engineer  
+Only return a valid JSON array. Do not include explanations or extra text.
 
-Only include job roles in list format. Do not add extra explanation or paragraphs.
+Input:
+{input_text}
 """
     messages = [
         {"role": "system", "content": "You are a helpful assistant."},
@@ -70,14 +77,21 @@ Only include job roles in list format. Do not add extra explanation or paragraph
     result, error = together_ai_request(messages)
     if result:
         content = result.get('choices', [{}])[0].get('message', {}).get('content', '')
-        # Parse only the job role lines
-        job_roles = [line.strip("- ").strip() for line in content.split("\n") if line.strip().startswith("-")]
-        if job_roles:
-            return {'roles': job_roles}
-        else:
-            return {'error': 'Could not parse job roles from AI response.', 'raw': content}
+        try:
+            match = re.search(r'\[.*\]', content, re.DOTALL)
+            if match:
+                roles = json.loads(match.group())
+            else:
+                roles = json.loads(content)
+        except Exception:
+            # fallback: parse as list of strings
+            roles = [line.strip('- ').strip() for line in content.split('\n') if line.strip().startswith('-')]
+        # Normalize: if roles is a list of strings, convert to list of dicts with all keys
+        if roles and isinstance(roles[0], str):
+            roles = [{"job_title": r, "skills": None, "certifications": None} for r in roles]
+        return {"roles": roles}
     else:
-        return {'error': error}
+        return {"error": error}
 
 
 def generate_interview_questions(input_text):

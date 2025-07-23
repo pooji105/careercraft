@@ -53,59 +53,31 @@
     {% if roles %}
     <div class="mt-5">
         <h3 class="mb-4">Your Matched Roles</h3>
-        {% if roles and roles[0] is string %}
-        <ul class="list-group mb-4">
-            {% for role in roles %}
-            <li class="list-group-item">{{ role }}</li>
-            {% endfor %}
-        </ul>
-        {% else %}
         <div class="row g-4">
-            {% for role in roles %}
-            <div class="col-12 col-md-6 col-lg-4">
-                <div class="card h-100 shadow-sm">
-                    <div class="card-header bg-success text-white fw-bold fs-5 text-center">{{ role.role or role.job_title }}</div>
-                    <div class="card-body">
-                        {% if role.skills %}
-                        <div class="mb-3">
-                            <span class="fw-bold">Required Skills:</span>
-                            <div class="mb-2">
-                                {% for skill in role.skills %}
-                                <span class="badge bg-primary me-1 mb-1">{{ skill }}</span>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        {% endif %}
-                        {% if role.certifications %}
-                        <div class="mb-3">
-                            <span class="fw-bold">Recommended Certifications / Resources:</span>
-                            <div>
-                                {% for cert in role.certifications %}
-                                <span class="badge bg-warning text-dark me-1 mb-1">{{ cert }}</span>
-                                {% endfor %}
-                                {% if role.resources %}
-                                    {% for res in role.resources %}
-                                    <span class="badge bg-warning text-dark me-1 mb-1">{{ res }}</span>
-                                    {% endfor %}
-                                {% endif %}
-                            </div>
-                        </div>
-                        {% elif role.resources %}
-                        <div class="mb-3">
-                            <span class="fw-bold">Recommended Resources:</span>
-                            <div>
-                                {% for res in role.resources %}
-                                <span class="badge bg-warning text-dark me-1 mb-1">{{ res }}</span>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
+          {% for role in roles %}
+          <div class="col-md-4">
+            <div class="card shadow-sm">
+              <div class="card-body">
+                <h5 class="card-title fw-bold text-success">{{ role.job_title }}</h5>
+                {% if role.skills %}
+                <p class="card-text"><strong>Required Skills:</strong><br>
+                  {{ role.skills | join(', ') }}
+                </p>
+                {% endif %}
+                {% if role.certifications %}
+                <p class="card-text"><strong>Recommended Certifications:</strong><br>
+                  {{ role.certifications | join(', ') }}
+                </p>
+                {% endif %}
+              </div>
             </div>
-            {% endfor %}
+          </div>
+          {% endfor %}
         </div>
-        {% endif %}
+        <form action="{{ url_for('resume.download_matched_roles') }}" method="post">
+          <input type="hidden" name="roles" value="{{ roles | tojson }}">
+          <button type="submit" class="btn btn-primary mt-3">Download Job Suggestions</button>
+        </form>
     </div>
     {% endif %}
     {% if past_matches and past_matches|length > 0 %}
