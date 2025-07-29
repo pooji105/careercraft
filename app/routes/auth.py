@@ -13,9 +13,14 @@ def register():
     
     form = RegistrationForm()
     if form.validate_on_submit():
+        # Check if email already exists
+        if User.query.filter_by(email=form.email.data).first():
+            flash('Email already registered. Please use a different email or login.', 'danger')
+            return render_template('auth/register.html', form=form)
+            
         user = User(
             name=form.name.data,
-            email=form.email.data,
+            email=form.email.data.lower().strip(),  # Normalize email
             current_role=form.current_role.data if form.current_role.data else None
         )
         user.set_password(form.password.data)
@@ -27,7 +32,9 @@ def register():
             return redirect(url_for('auth.login'))
         except Exception as e:
             db.session.rollback()
-            flash('Registration failed. Please try again.', 'danger')
+            # Log the actual error for debugging
+            print(f"⚠️ Registration error: {e}")
+            flash(f'Registration failed: {str(e)}. Please try again.', 'danger')
     
     return render_template('auth/register.html', form=form)
 

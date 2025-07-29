@@ -1,19 +1,12 @@
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
-from flask_login import LoginManager
-from flask_wtf.csrf import CSRFProtect
 from dotenv import load_dotenv
 import os
 
+# Import extensions
+from app.extensions import db, migrate, login_manager, csrf
+
 # Load environment variables
 load_dotenv()
-
-# Initialize extensions
-db = SQLAlchemy()
-migrate = Migrate()
-login_manager = LoginManager()
-csrf = CSRFProtect()
 
 def create_app():
     app = Flask(__name__)
@@ -48,9 +41,9 @@ def create_app():
     app.register_blueprint(resume_bp)  # No url_prefix so /resume-builder works
     app.register_blueprint(interview_bp, url_prefix='/interview')
     app.register_blueprint(jobs_bp)  # No url_prefix for job tracker
-    app.register_blueprint(skills_bp)
+    app.register_blueprint(skills_bp, url_prefix='/skills')
     
     # Import models to ensure they are registered with SQLAlchemy
     from app.models import User
     
-    return app 
+    return app

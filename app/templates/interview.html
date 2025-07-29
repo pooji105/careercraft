@@ -3,6 +3,34 @@
 {% block title %}Interview Simulator - CareerCraft{% endblock %}
 
 {% block content %}
+    <!-- Display flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="position-relative">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show mb-3" role="alert">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                {% if category == 'success' %}
+                                    <i class="bi bi-check-circle-fill me-2"></i>
+                                {% elif category == 'warning' %}
+                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                {% else %}
+                                    <i class="bi bi-x-circle-fill me-2"></i>
+                                {% endif %}
+                            </div>
+                            <div class="flex-grow-1">
+                                <p class="mb-0">{{ message }}</p>
+                            </div>
+                            <div class="flex-shrink-0">
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
 <div class="container mt-4">
     <div class="row justify-content-center">
         <div class="col-12 col-md-8 col-lg-7">
@@ -11,12 +39,25 @@
                     <h1 class="h4 mb-0">Interview Simulator</h1>
                 </div>
                 <div class="card-body">
-                    <form method="POST">
-                        <div class="form-floating mb-3">
-                            <textarea class="form-control" name="profile_input" id="profileInput" rows="4" required placeholder="Paste your resume, job description, or list your skills">{{ profile_input or '' }}</textarea>
-                            <label for="profileInput">Paste your resume, job description, or list your skills</label>
+                    <form method="POST" action="{{ url_for('interview.interview_simulator') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-3">
+                            <label for="input_text" class="form-label">Resume/Job Description</label>
+                            <textarea 
+                                class="form-control" 
+                                id="input_text" 
+                                name="input_text" 
+                                required 
+                                aria-required="true" 
+                                placeholder="Enter your job role, description, or skills"
+                                rows="4"
+                            >{{ request.form.get('input_text', '') }}</textarea>
                         </div>
-                        <button type="submit" class="btn btn-primary w-100">Generate Interview Questions</button>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                Generate Interview Questions
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -26,16 +67,65 @@
                     <h4 class="mb-0">Your Interview Questions</h4>
                 </div>
                 <div class="card-body">
-                    <form method="POST">
-                        <input type="hidden" name="profile_input" value="{{ profile_input }}">
-                        <input type="hidden" name="questions_json" value="{{ questions|tojson }}">
-                        {% for q in questions %}
-                        <div class="form-floating mb-3">
-                            <textarea class="form-control" name="answer_{{ loop.index0 }}" id="answer{{ loop.index0 }}" rows="2" required placeholder="Your answer">{{ answers[loop.index0] if answers else '' }}</textarea>
-                            <label for="answer{{ loop.index0 }}"><strong>Q{{ loop.index }}:</strong> {{ q }}</label>
+                    <form method="POST" action="{{ url_for('interview.interview_simulator') }}" id="answersForm" onsubmit="return validateForm()">
+                    <script>
+                    function validateForm() {
+                        console.log('Form submission started');
+                        const form = document.getElementById('answersForm');
+                        const formData = new FormData(form);
+                        
+                        // Log all form data
+                        for (let [key, value] of formData.entries()) {
+                            console.log(`${key}: ${value}`);
+                        }
+                        
+                        // Check if all required fields are filled
+                        const answerFields = document.querySelectorAll('.answer-field');
+                        let allFilled = true;
+                        
+                        answerFields.forEach((field, index) => {
+                            if (!field.value.trim()) {
+                                console.log(`Answer ${index + 1} is empty`);
+                                allFilled = false;
+                            }
+                        });
+                        
+                        if (!allFilled) {
+                            alert('Please answer all questions before submitting.');
+                            return false;
+                        }
+                        
+                        console.log('All answers are filled, submitting form...');
+                        return true;
+                    }
+                    </script>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="submit_answers" value="true">
+                        <div class="mb-3">
+                            {% for q in questions %}
+                            <div class="question-answer-pair mb-4">
+                                <div class="question mb-2 p-3 bg-light rounded">
+                                    <p class="mb-0"><strong>Q{{ loop.index }}:</strong> {{ q }}</p>
+                                </div>
+                                <div class="answer">
+                                    <div class="form-group">
+                                        <label for="answer_{{ loop.index0 }}" class="form-label">Your Answer (Required)</label>
+                                        <textarea 
+                                            class="form-control answer-field" 
+                                            name="answer_{{ loop.index0 }}" 
+                                            id="answer_{{ loop.index0 }}" 
+                                            rows="3"
+                                            required
+                                        >{{ answers[loop.index0] if answers and answers[loop.index0] }}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            {% if not loop.last %}<hr class="my-4">{% endif %}
+                            {% endfor %}
                         </div>
-                        {% endfor %}
-                        <button type="submit" class="btn btn-success w-100">Submit Answers for Feedback</button>
+                        <button type="submit" class="btn btn-success w-100">
+                            Submit Answers
+                        </button>
                     </form>
                 </div>
             </div>

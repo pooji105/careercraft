@@ -1,18 +1,450 @@
 {% extends "base.html" %}
 
-{% block title %}Resume Builder - CareerCraft{% endblock %}
+{% block title %}{% if edit_mode %}Edit Resume{% else %}Resume Builder{% endif %} - CareerCraft{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <h1 class="mb-4">Resume Builder</h1>
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Professional Resume Builder</h5>
-                <p class="card-text">Resume builder functionality coming soon...</p>
-                <a href="{{ url_for('main.home') }}" class="btn btn-primary">Back to Home</a>
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-10 col-xl-8">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h2 class="mb-4 border-bottom pb-2">{% if edit_mode %}Edit Resume{% else %}Resume Builder{% endif %}</h2>
+                    <form id="resumeForm" method="POST" novalidate>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div id="step-1" class="resume-step">
+                            <h4 class="mb-3 border-bottom pb-1">Personal Information</h4>
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="fullName" placeholder="Full Name" required>
+                                        <label for="fullName">Full Name</label>
+                                        <div class="invalid-feedback">Please enter your full name.</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="email" class="form-control" id="email" placeholder="Email" required>
+                                        <label for="email">Email</label>
+                                        <div class="invalid-feedback">Please enter a valid email address.</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="phone" placeholder="Phone">
+                                        <label for="phone">Phone</label>
+                                        <div class="form-text">Optional, but helps recruiters contact you.</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <textarea class="form-control" id="summary" placeholder="Professional Summary" style="height: 100px"></textarea>
+                                        <label for="summary">Professional Summary</label>
+                                        <div class="form-text">Briefly describe your background and goals.</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-end">
+                                <button type="button" class="btn btn-primary next-step">Next</button>
+                            </div>
+                        </div>
+                        <div id="step-2" class="resume-step d-none">
+                            <h4 class="mb-3 border-bottom pb-1">Education</h4>
+                            <div id="education-list"></div>
+                            <button type="button" class="btn btn-outline-secondary mb-3" id="add-education">Add Education</button>
+                            <div class="d-flex justify-content-between">
+                                <button type="button" class="btn btn-secondary prev-step">Previous</button>
+                                <button type="button" class="btn btn-primary next-step">Next</button>
+                            </div>
+                        </div>
+                        <div id="step-3" class="resume-step d-none">
+                            <h4 class="mb-3 border-bottom pb-1">Experience</h4>
+                            <div id="experience-list"></div>
+                            <button type="button" class="btn btn-outline-secondary mb-3" id="add-experience">Add Experience</button>
+                            <div class="d-flex justify-content-between">
+                                <button type="button" class="btn btn-secondary prev-step">Previous</button>
+                                <button type="button" class="btn btn-primary next-step">Next</button>
+                            </div>
+                        </div>
+                        <div id="step-4" class="resume-step d-none">
+                            <h4 class="mb-3 border-bottom pb-1">Projects</h4>
+                            <div id="project-list"></div>
+                            <button type="button" class="btn btn-outline-secondary mb-3" id="add-project">Add Project</button>
+                            <div class="d-flex justify-content-between">
+                                <button type="button" class="btn btn-secondary prev-step">Previous</button>
+                                <button type="button" class="btn btn-primary next-step">Next</button>
+                            </div>
+                        </div>
+                        <div id="step-5" class="resume-step d-none">
+                            <h4 class="mb-3 border-bottom pb-1">Skills</h4>
+                            <div id="skills-list"></div>
+                            <button type="button" class="btn btn-outline-secondary mb-3" id="add-skill">Add Skill</button>
+                            <div class="d-flex justify-content-between">
+                                <button type="button" class="btn btn-secondary prev-step">Previous</button>
+                                <button type="submit" class="btn btn-success">{% if edit_mode %}Update Resume{% else %}Finish & Save{% endif %}</button>
+                            </div>
+                        </div>
+                        <input type="hidden" name="resume_data" id="resume_data">
+                    </form>
+                </div>
             </div>
         </div>
     </div>
 </div>
-{% endblock %} 
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentStep = 1;
+    const totalSteps = 5;
+
+    // Initialize the first step
+    showStep(currentStep);
+
+    // Next button click handler
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('next-step')) {
+            e.preventDefault();
+            if (validateStep(currentStep)) {
+                currentStep++;
+                showStep(currentStep);
+                document.querySelector('.card-body').scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+    });
+
+    // Previous button click handler
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('prev-step')) {
+            e.preventDefault();
+            currentStep--;
+            showStep(currentStep);
+            document.querySelector('.card-body').scrollIntoView({ behavior: 'smooth' });
+        }
+    });
+
+    // Show specific step
+    function showStep(step) {
+        document.querySelectorAll('.resume-step').forEach(stepEl => {
+            stepEl.classList.add('d-none');
+        });
+
+        const currentStepEl = document.getElementById(`step-${step}`);
+        if (currentStepEl) {
+            currentStepEl.classList.remove('d-none');
+        }
+
+        updateStepButtons(step);
+    }
+
+    // Update button states based on current step
+    function updateStepButtons(step) {
+        document.querySelectorAll('.prev-step').forEach(btn => {
+            btn.style.display = step === 1 ? 'none' : 'block';
+        });
+
+        document.querySelectorAll('.next-step').forEach(btn => {
+            btn.style.display = step === totalSteps ? 'none' : 'block';
+        });
+    }
+
+    // Validate current step before proceeding
+    function validateStep(step) {
+        const currentStepEl = document.getElementById(`step-${step}`);
+        if (!currentStepEl) return true;
+
+        const requiredInputs = currentStepEl.querySelectorAll('input[required], textarea[required]');
+        let isValid = true;
+
+        requiredInputs.forEach(input => {
+            if (!input.value.trim()) {
+                input.classList.add('is-invalid');
+                isValid = false;
+            } else {
+                input.classList.remove('is-invalid');
+            }
+        });
+
+        if (!isValid) {
+            const firstError = currentStepEl.querySelector('.is-invalid');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        return isValid;
+    }
+
+    // Add input validation for required fields
+    document.querySelectorAll('input[required], textarea[required]').forEach(input => {
+        input.addEventListener('input', function() {
+            if (this.value.trim()) {
+                this.classList.remove('is-invalid');
+            }
+        });
+    });
+
+    // Handle form submission
+    const resumeForm = document.getElementById('resumeForm');
+    if (resumeForm) {
+        resumeForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            let allValid = true;
+            for (let i = 1; i <= totalSteps; i++) {
+                if (!validateStep(i)) {
+                    allValid = false;
+                    currentStep = i;
+                    showStep(currentStep);
+                    break;
+                }
+            }
+
+            if (allValid) {
+                const formData = new FormData(resumeForm);
+                const formObject = {};
+
+                formData.forEach((value, key) => {
+                    formObject[key] = value;
+                });
+
+                // Send data as JSON
+                fetch(resumeForm.action, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+                    },
+                    body: JSON.stringify(formObject)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.redirect_url) {
+                        window.location.href = data.redirect_url; // Redirect on success
+                    } else {
+                        alert(data.error || 'An error occurred while saving your resume.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while saving your resume.');
+                });
+            }
+        });
+    }
+
+    // Add education functionality
+    const educationList = document.getElementById('education-list');
+    const addEducationBtn = document.getElementById('add-education');
+
+    if (addEducationBtn) {
+        addEducationBtn.addEventListener('click', function() {
+            const idx = educationList.children.length;
+            const educationHtml = `
+                <div class="card mb-2 p-3">
+                    <div class="mb-2">
+                        <input type="text" class="form-control" placeholder="Institution" name="edu_institution_${idx}" required>
+                    </div>
+                    <div class="mb-2">
+                        <input type="text" class="form-control" placeholder="Degree" name="edu_degree_${idx}" required>
+                    </div>
+                    <div class="mb-2">
+                        <input type="text" class="form-control" placeholder="Year" name="edu_year_${idx}">
+                    </div>
+                    <button type="button" class="btn btn-sm btn-danger remove-edu">Remove</button>
+                </div>
+            `;
+            educationList.insertAdjacentHTML('beforeend', educationHtml);
+
+            // Add remove functionality for the new education entry
+            const removeBtn = educationList.lastElementChild.querySelector('.remove-edu');
+            if (removeBtn) {
+                removeBtn.addEventListener('click', function() {
+                    this.closest('.card').remove();
+                });
+            }
+        });
+    }
+
+    // Add experience functionality
+    const experienceList = document.getElementById('experience-list');
+    const addExperienceBtn = document.getElementById('add-experience');
+
+    if (addExperienceBtn) {
+        addExperienceBtn.addEventListener('click', function() {
+            const idx = experienceList.children.length;
+            const experienceHtml = `
+                <div class="card mb-2 p-3">
+                    <div class="mb-2">
+                        <input type="text" class="form-control" placeholder="Job Title" name="exp_title_${idx}" required>
+                    </div>
+                    <div class="mb-2">
+                        <input type="text" class="form-control" placeholder="Company" name="exp_company_${idx}" required>
+                    </div>
+                    <div class="mb-2">
+                        <input type="text" class="form-control" placeholder="Duration" name="exp_duration_${idx}">
+                    </div>
+                    <button type="button" class="btn btn-sm btn-danger remove-exp">Remove</button>
+                </div>
+            `;
+            experienceList.insertAdjacentHTML('beforeend', experienceHtml);
+
+            // Add remove functionality for the new experience entry
+            const removeBtn = experienceList.lastElementChild.querySelector('.remove-exp');
+            if (removeBtn) {
+                removeBtn.addEventListener('click', function() {
+                    this.closest('.card').remove();
+                });
+            }
+        });
+    }
+
+    // Add project functionality
+    const projectList = document.getElementById('project-list');
+    const addProjectBtn = document.getElementById('add-project');
+
+    if (addProjectBtn) {
+        addProjectBtn.addEventListener('click', function() {
+            const idx = projectList.children.length;
+            const projectHtml = `
+                <div class="card mb-2 p-3">
+                    <div class="mb-2">
+                        <input type="text" class="form-control" placeholder="Project Title" name="proj_title_${idx}" required>
+                    </div>
+                    <div class="mb-2">
+                        <textarea class="form-control" placeholder="Description" name="proj_description_${idx}" required></textarea>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-danger remove-proj">Remove</button>
+                </div>
+            `;
+            projectList.insertAdjacentHTML('beforeend', projectHtml);
+
+            // Add remove functionality for the new project entry
+            const removeBtn = projectList.lastElementChild.querySelector('.remove-proj');
+            if (removeBtn) {
+                removeBtn.addEventListener('click', function() {
+                    this.closest('.card').remove();
+                });
+            }
+        });
+    }
+
+    // Add skill functionality
+    const skillsList = document.getElementById('skills-list');
+    const addSkillBtn = document.getElementById('add-skill');
+
+    if (addSkillBtn) {
+        addSkillBtn.addEventListener('click', function() {
+            const idx = skillsList.children.length;
+            const skillHtml = `
+                <div class="input-group mb-2">
+                    <input type="text" class="form-control" placeholder="Skill" name="skill_${idx}" required>
+                    <button type="button" class="btn btn-sm btn-danger remove-skill">Remove</button>
+                </div>
+            `;
+            skillsList.insertAdjacentHTML('beforeend', skillHtml);
+
+            // Add remove functionality for the new skill entry
+            const removeBtn = skillsList.lastElementChild.querySelector('.remove-skill');
+            if (removeBtn) {
+                removeBtn.addEventListener('click', function() {
+                    this.closest('.input-group').remove();
+                });
+            }
+        });
+    }
+
+    // Existing data population for editing
+    {% if edit_mode and existing_data %}
+    const existingData = {{ existing_data|tojson|safe }};
+
+    if (existingData.personal) {
+        document.getElementById('fullName').value = existingData.personal.fullName || '';
+        document.getElementById('email').value = existingData.personal.email || '';
+        document.getElementById('phone').value = existingData.personal.phone || '';
+        document.getElementById('summary').value = existingData.personal.summary || '';
+    }
+
+    if (existingData.education && existingData.education.length > 0) {
+        const educationList = document.getElementById('education-list');
+        existingData.education.forEach((edu, idx) => {
+            const eduHtml = `
+                <div class="card mb-2 p-3">
+                    <div class="mb-2">
+                        <input type="text" class="form-control" placeholder="Institution" 
+                               name="edu_institution_${idx}" value="${edu.institution || ''}" required>
+                    </div>
+                    <div class="mb-2">
+                        <input type="text" class="form-control" placeholder="Degree" 
+                               name="edu_degree_${idx}" value="${edu.degree || ''}" required>
+                    </div>
+                    <div class="mb-2">
+                        <input type="text" class="form-control" placeholder="Year" 
+                               name="edu_year_${idx}" value="${edu.year || ''}">
+                    </div>
+                    <button type="button" class="btn btn-sm btn-danger remove-edu">Remove</button>
+                </div>
+            `;
+            educationList.insertAdjacentHTML('beforeend', eduHtml);
+        });
+    }
+
+    if (existingData.experience && existingData.experience.length > 0) {
+        const experienceList = document.getElementById('experience-list');
+        existingData.experience.forEach((exp, idx) => {
+            const expHtml = `
+                <div class="card mb-2 p-3">
+                    <div class="mb-2">
+                        <input type="text" class="form-control" placeholder="Job Title" 
+                               name="exp_title_${idx}" value="${exp.title || ''}" required>
+                    </div>
+                    <div class="mb-2">
+                        <input type="text" class="form-control" placeholder="Company" 
+                               name="exp_company_${idx}" value="${exp.company || ''}" required>
+                    </div>
+                    <div class="mb-2">
+                        <input type="text" class="form-control" placeholder="Duration" 
+                               name="exp_duration_${idx}" value="${exp.duration || ''}">
+                    </div>
+                    <button type="button" class="btn btn-sm btn-danger remove-exp">Remove</button>
+                </div>
+            `;
+            experienceList.insertAdjacentHTML('beforeend', expHtml);
+        });
+    }
+
+    if (existingData.projects && existingData.projects.length > 0) {
+        const projectList = document.getElementById('project-list');
+        existingData.projects.forEach((proj, idx) => {
+            const projHtml = `
+                <div class="card mb-2 p-3">
+                    <div class="mb-2">
+                        <input type="text" class="form-control" placeholder="Project Title" 
+                               name="proj_title_${idx}" value="${proj.title || ''}" required>
+                    </div>
+                    <div class="mb-2">
+                        <textarea class="form-control" placeholder="Description" 
+                                  name="proj_description_${idx}" required>${proj.description || ''}</textarea>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-danger remove-proj">Remove</button>
+                </div>
+            `;
+            projectList.insertAdjacentHTML('beforeend', projHtml);
+        });
+    }
+
+    if (existingData.skills && existingData.skills.length > 0) {
+        const skillsList = document.getElementById('skills-list');
+        existingData.skills.forEach((skill, idx) => {
+            const skillHtml = `
+                <div class="input-group mb-2">
+                    <input type="text" class="form-control" placeholder="Skill" 
+                           name="skill_${idx}" value="${skill.name || ''}" required>
+                    <button type="button" class="btn btn-sm btn-danger remove-skill">Remove</button>
+                </div>
+            `;
+            skillsList.insertAdjacentHTML('beforeend', skillHtml);
+        });
+    }
+    {% endif %}
+});
+</script>
+{% endblock %}

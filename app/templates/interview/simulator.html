@@ -1,0 +1,362 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title or 'Interview Simulator' }} - CareerCraft{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="h4 mb-0">Interview Simulator</h2>
+                </div>
+                <div class="card-body">
+                    <!-- Feedback Message Container -->
+                    <div id="feedback-message-container" class="mb-3">
+                        <!-- Messages will be inserted here by JavaScript -->
+                    </div>
+                    
+                    <p class="lead">Practice your interview skills with our AI-powered simulator.</p>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-4">
+                                <div class="card-header bg-light">
+                                    <h3 class="h5 mb-0">Generate Questions</h3>
+                                </div>
+                                <div class="card-body">
+                                    <form method="POST" action="{{ url_for('interview.interview_simulator') }}">
+                                        {{ form.hidden_tag() }}
+                                        
+                                        <div class="mb-3">
+                                            {{ form.prompt.label(class="form-label") }}
+                                            {{ form.prompt(class="form-control", rows=6, **{'data-min-rows': '6', 'data-max-rows': '20'}) }}
+                                            {% if form.prompt.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.prompt.errors[0] }}
+                                                </div>
+                                            {% endif %}
+                                            <div class="form-text">
+                                                Enter your resume, job description, or skills to generate relevant interview questions. No character limit.
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="d-grid">
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="bi bi-lightning-charge me-2"></i>Generate Questions
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card h-100" id="questions-card">
+                                <div class="card-header bg-light">
+                                    <h3 class="h5 mb-0">Interview Questions</h3>
+                                </div>
+                                <div class="card-body" id="questions-container">
+                                    {% if questions %}
+                                        <form id="interview-form" method="POST" action="{{ url_for('interview.evaluate_answers') }}">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            {% for question in questions %}
+                                                <div class="mb-4 question-block">
+                                                    <label class="form-label fw-bold">Question {{ loop.index }}:</label>
+                                                    <p>{{ question }}</p>
+                                                    <input type="hidden" name="questions" value="{{ question }}">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Your Answer:</label>
+                                                        <textarea class="form-control answer-input" name="answer_{{ loop.index0 }}" rows="3" required></textarea>
+                                                    </div>
+                                                    <div class="answer-feedback d-none">
+                                                        <div class="alert"></div>
+                                                        <div class="correct-answer mt-2"></div>
+                                                    </div>
+                                                    <hr>
+                                                </div>
+                                            {% endfor %}
+                                            <div class="d-grid">
+                                                <button type="submit" class="btn btn-success" id="submit-answers">
+                                                    <i class="bi bi-check-circle me-2"></i>Submit Answers
+                                                </button>
+                                            </div>
+                                        </form>
+                                    {% else %}
+                                        <div class="text-center text-muted py-4">
+                                            <i class="bi bi-chat-square-text display-4 mb-3"></i>
+                                            <p class="mb-0">Your interview questions will appear here after you generate them.</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Evaluated Questions Section -->
+                                {% if evaluated_questions %}
+                                <!-- Debug: Show the number of evaluated questions -->
+                                <!-- DEBUG: {{ evaluated_questions|length }} questions loaded -->
+                                <!-- DEBUG: Session has {{ session.get('last_response_ids', 'None') }} -->
+                                <div class="card-header bg-light">
+                                    <h3 class="h5 mb-0">Evaluation Results</h3>
+                                </div>
+                                <div class="card-body">
+                                    {% for q in evaluated_questions %}
+                                    <div class="card mb-3">
+                                        <div class="card-body">
+                                            <h5 class="card-title">Question {{ loop.index }}:</h5>
+                                            <p><strong>{{ q.question }}</strong></p>
+
+                                            <p><strong>Your Answer:</strong> {{ q.answer }}</p>
+                                            
+
+
+                                            {% if q.verdict|lower == 'correct' %}
+                                                <div class="alert alert-success">
+                                                    <strong>✅ {{ q.verdict }}</strong><br>
+                                                    <strong>Feedback:</strong> {{ q.feedback }}
+                                                </div>
+                                            {% elif q.verdict|lower == 'partially correct' %}
+                                                <div class="alert alert-warning">
+                                                    <strong>⚠️ {{ q.verdict }}</strong><br>
+                                                    <strong>Feedback:</strong> {{ q.feedback }}
+                                                </div>
+                                            {% else %}
+                                                <div class="alert alert-danger">
+                                                    <strong>❌ {{ q.verdict }}</strong><br>
+                                                    <strong>Feedback:</strong> {{ q.feedback }}
+                                                </div>
+                                            {% endif %}
+
+                                            {% if q.verdict|lower != 'correct' and q.model_answer %}
+                                            <div class="alert alert-info">
+                                                <strong>💡 Model Answer:</strong><br>
+                                                {{ q.model_answer }}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                
+                                <div class="card-header bg-light">
+                                    <h3 class="h5 mb-0">Generated Questions</h3>
+                                </div>
+                                <div class="card-body">
+                                    {% if questions %}
+                                        <div class="list-group">
+                                            {% for question in questions %}
+                                                <div class="list-group-item">
+                                                    <div class="d-flex w-100 justify-content-between">
+                                                        <h5 class="mb-1">Question {{ loop.index }}</h5>
+                                                    </div>
+                                                    <p class="mb-1">{{ question }}</p>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <div class="text-center text-muted py-4">
+                                            <i class="bi bi-chat-square-text display-4 mb-3"></i>
+                                            <p class="mb-0">No questions generated yet. Enter your details on the left to get started.</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .list-group-item {
+        border-left: 4px solid #0d6efd;
+        margin-bottom: 8px;
+        border-radius: 4px;
+    }
+    .list-group-item:last-child {
+        margin-bottom: 0;
+    }
+</style>
+
+{% block extra_js %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('interview-form');
+    
+    if (form) {
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submit-answers');
+            const originalBtnText = submitBtn.innerHTML;
+            
+            try {
+                // Safely clear any previous messages
+                const messageContainer = document.getElementById('feedback-message-container') || 
+                                      document.getElementById('feedback-message') ||
+                                      document.createElement('div');
+                
+                // If we created a new element, add it to the DOM
+                if (!messageContainer.parentNode && messageContainer !== document.body) {
+                    document.body.prepend(messageContainer);
+                }
+                
+                // Clear existing content
+                messageContainer.innerHTML = '';
+                
+                // Disable the submit button and show loading state
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Evaluating...';
+                
+                // Collect answers from all textareas
+                const answerInputs = form.querySelectorAll('textarea[name^="answer_"]');
+                const formData = new FormData();
+                let hasAnswers = false;
+                
+                // Add CSRF token
+                formData.append('csrf_token', '{{ csrf_token() }}');
+                
+                // Add each answer to form data
+                answerInputs.forEach(function(input, index) {
+                    if (input.value.trim()) {
+                        formData.append('answer_' + index, input.value);
+                        hasAnswers = true;
+                    }
+                });
+                
+                if (!hasAnswers) {
+                    alert('Please provide answers to at least one question.');
+                    throw new Error('No answers provided');
+                }
+                
+                // Submit the form via AJAX
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    // Show success message and reload page to show evaluated questions
+                    const successMessage = `
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="bi bi-check-circle me-2"></i>
+                            Your answers have been evaluated successfully! The results are displayed below.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    `;
+                    
+                    messageContainer.innerHTML = successMessage;
+                    
+                    // Reload the page to show the evaluated questions from database
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                    });
+                    
+                    // Show success message
+                    const successAlert = document.createElement('div');
+                    successAlert.className = 'alert alert-success alert-dismissible fade show mt-3';
+                    successAlert.innerHTML = `
+                        <i class="bi bi-check-circle me-2"></i>
+                        Your answers have been evaluated successfully!
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    `;
+                    form.appendChild(successAlert);
+                    
+                } else {
+                    // Show error message
+                    const errorMsg = data.error || 'An error occurred while evaluating your answers.';
+                    const errorAlert = document.createElement('div');
+                    errorAlert.className = 'alert alert-danger alert-dismissible fade show mt-3';
+                    errorAlert.innerHTML = `
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        ${errorMsg}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    `;
+                    form.prepend(errorAlert);
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                try {
+                    // Try multiple fallback selectors for the message container
+                    const containerSelectors = [
+                        '#feedback-message-container',
+                        '#feedback-message',
+                        '.alert-container',
+                        '.messages'
+                    ];
+                    
+                    let messageContainer = null;
+                    for (const selector of containerSelectors) {
+                        messageContainer = document.querySelector(selector);
+                        if (messageContainer) break;
+                    }
+                    
+                    // If still no container, create one
+                    if (!messageContainer) {
+                        messageContainer = document.createElement('div');
+                        messageContainer.id = 'feedback-message-container';
+                        const form = document.querySelector('form') || document.body;
+                        form.prepend(messageContainer);
+                    }
+                    
+                    // Set the error message
+                    const errorMessage = `
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            An error occurred: ${error.message || 'Please try again.'}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    `;
+                    
+                    // Use insertAdjacentHTML for safer HTML insertion
+                    messageContainer.insertAdjacentHTML('afterbegin', errorMessage);
+                    
+                } catch (e) {
+                    // Final fallback to console and alert
+                    console.error('Error displaying error message:', e);
+                    alert('An error occurred: ' + (error.message || 'Please try again.'));
+                }
+            } finally {
+                // Re-enable the submit button
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+            }
+        });
+    }
+    
+    // Auto-resize textareas
+    const textareas = document.querySelectorAll('textarea[data-min-rows]');
+    textareas.forEach(textarea => {
+        const minRows = parseInt(textarea.getAttribute('data-min-rows')) || 3;
+        const maxRows = parseInt(textarea.getAttribute('data-max-rows')) || 10;
+        
+        function adjustHeight() {
+            textarea.style.overflow = 'hidden';
+            textarea.style.height = 'auto';
+            
+            const lineHeight = parseInt(getComputedStyle(textarea).lineHeight) || 20;
+            const maxHeight = maxRows * lineHeight;
+            const newHeight = Math.min(Math.max(textarea.scrollHeight, minRows * lineHeight), maxHeight);
+            
+            textarea.style.height = newHeight + 'px';
+            textarea.style.overflowY = newHeight >= maxHeight ? 'auto' : 'hidden';
+        }
+        
+        textarea.addEventListener('input', adjustHeight);
+        // Initial adjustment
+        adjustHeight();
+    });
+});
+</script>
+{% endblock extra_js %}
+{% endblock %}

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_file, make_response, session
 from flask_login import login_required, current_user
 from app import db
 from app.models import Resume
@@ -13,6 +13,8 @@ from app.utils.ai_utils import analyze_resume
 import tempfile
 from app.models import JobMatch, JobMatchHistory
 from app.utils.file_utils import export_job_match_history_txt
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 
 try:
     import fitz  # PyMuPDF
@@ -22,55 +24,68 @@ except ImportError:
 
 resume_bp = Blueprint('resume', __name__)
 
-@resume_bp.route('/')
-@login_required
-def resume_builder():
-    return render_template('resume/builder.html')
-
 @resume_bp.route('/resume-builder', methods=['GET', 'POST'])
 @login_required
-def multi_step_resume_builder():
+def resume_builder():
     if request.method == 'POST':
-        form_data = request.form.get('resume_data')
-        if not form_data:
-            flash('No data submitted.', 'danger')
-            return redirect(url_for('resume.multi_step_resume_builder'))
-        try:
-            raw_data = json.loads(form_data)
-            cleaned_data = clean_resume_data(raw_data)
-            data_json = json.dumps(cleaned_data)
-        except Exception:
-            flash('Invalid data format.', 'danger')
-            return redirect(url_for('resume.multi_step_resume_builder'))
-        resume = Resume(user_id=current_user.id, data_json=data_json)
-        db.session.add(resume)
-        db.session.commit()
-        flash('Resume saved successfully!', 'success')
-        return redirect(url_for('resume.view_resume', resume_id=resume.id))
-    return render_template('resume/resume_builder.html', edit_mode=False, existing_data=None)
+        # Capture data from the form
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
+        skills = request.form.get('skills', '').strip()
+        education = request.form.get('education', '').strip()
+        experience = request.form.get('experience', '').strip()
+
+        # Save it in session
+        session['resume_data'] = {
+            'name': name,
+            'email': email,
+            'skills': skills,
+            'education': education,
+            'experience': experience
+        }
+
+        return redirect(url_for('resume.view_latest_resume'))
+
+    # Ensure the correct path to the template
+    return render_template('resume/resume_form.html')
 
 @resume_bp.route('/resume/<int:resume_id>')
 @login_required
 def view_resume(resume_id):
     resume = Resume.query.get_or_404(resume_id)
-    data = json.loads(resume.data_json)
+    data = json.loads(resume.data)
     return render_template('resume/view_resume.html', resume=resume, data=data)
 
-@resume_bp.route('/resume/view')
+@resume_bp.route('/view-latest-resume', methods=['GET'])
 @login_required
 def view_latest_resume():
-    resume = Resume.query.filter_by(user_id=current_user.id).order_by(Resume.created_at.desc()).first()
-    if not resume:
-        flash('No resume found. Please create one.', 'info')
-        return redirect(url_for('resume.multi_step_resume_builder'))
-    data = json.loads(resume.data_json)
-    return render_template('resume/view_resume.html', resume=resume, data=data)
+    try:
+        # Fetch the latest resume data for the logged-in user
+        resume = Resume.query.filter_by(user_id=current_user.id).order_by(Resume.id.desc()).first()
+
+        if resume:
+            # Parse the resume JSON data
+            parsed_resume = json.loads(resume.data)
+        else:
+            # Provide safe defaults if no resume exists
+            parsed_resume = {
+                "personal": {"fullName": "", "email": "", "phone": "", "summary": ""},
+                "skills": [],
+                "education": [],
+                "experience": [],
+                "projects": []
+            }
+
+        return render_template('view_latest_resume.html', resume=parsed_resume)
+    except Exception as e:
+        flash(f"An error occurred: {str(e)}", "danger")
+        return redirect(url_for('resume.resume_builder'))
 
 @resume_bp.route('/resume/<int:resume_id>/download')
 @login_required
 def download_resume_pdf(resume_id):
     resume = Resume.query.get_or_404(resume_id)
-    data = json.loads(resume.data_json)
+    data = json.loads(resume.data)
     html = render_template('resume/pdf_template.html', data=data)
     pdf = io.BytesIO()
     pisa_status = pisa.CreatePDF(html, dest=pdf)
@@ -86,8 +101,8 @@ def download_latest_resume_pdf():
     resume = Resume.query.filter_by(user_id=current_user.id).order_by(Resume.created_at.desc()).first()
     if not resume:
         flash('No resume found. Please create one.', 'info')
-        return redirect(url_for('resume.multi_step_resume_builder'))
-    data = json.loads(resume.data_json)
+        return redirect(url_for('resume.resume_builder'))
+    data = json.loads(resume.data)
     html = render_template('resume/pdf_template.html', data=data)
     pdf = html_to_pdf(html)
     if not pdf:
@@ -107,7 +122,7 @@ def edit_resume():
     resume = Resume.query.filter_by(user_id=current_user.id).order_by(Resume.created_at.desc()).first()
     if not resume:
         flash('No resume found to edit. Please create one first.', 'info')
-        return redirect(url_for('resume.multi_step_resume_builder'))
+        return redirect(url_for('resume.resume_builder'))
 
     if request.method == 'POST':
         form_data = request.form.get('resume_data')
@@ -182,6 +197,31 @@ def resume_analyzer():
     # Fetch all past uploads for this user, most recent first
     past_uploads = UploadedResume.query.filter_by(user_id=current_user.id).order_by(UploadedResume.created_at.desc()).all()
     return render_template('resume/resume_upload.html', feedback=feedback, error=error, past_uploads=past_uploads)
+
+@resume_bp.route('/download-feedback/<int:upload_id>')
+@login_required
+def download_feedback(upload_id):
+    upload = UploadedResume.query.get_or_404(upload_id)
+    if upload.user_id != current_user.id:
+        abort(403)
+    
+    # Create a text file with the feedback
+    feedback_text = f"Resume Analysis Feedback\n"
+    feedback_text += f"Date: {upload.created_at.strftime('%Y-%m-%d %H:%M')}\n"
+    feedback_text += f"\n=== AI Feedback ===\n{upload.suggestions}"
+    
+    # Create a file-like object in memory
+    mem = io.BytesIO()
+    mem.write(feedback_text.encode('utf-8'))
+    mem.seek(0)
+    
+    # Return the file as an attachment
+    return send_file(
+        mem,
+        as_attachment=True,
+        download_name=f"resume_feedback_{upload_id}.txt",
+        mimetype='text/plain'
+    )
 
 @resume_bp.route('/job-matcher', methods=['GET', 'POST'])
 @login_required
@@ -312,60 +352,56 @@ def download_matched_roles():
         mimetype="text/plain"
     )
 
-@resume_bp.route('/download-resume')
+@resume_bp.route('/download-resume', methods=['GET'])
 @login_required
 def download_resume():
-    user_data = {
-        "name": "Poojitha",
-        "email": "poojithasaidurga_marella@srmup.edu.in",
-        "phone": "9391028218",
-        "linkedin": "linkedin.com/in/poojitha",
-        "github": "github.com/pooji105",
-        "summary": "Enthusiastic developer with internship experience...",
-        "skills": {
-            "Programming": ["Python", "C++", "SQL"],
-            "Web Dev": ["HTML", "CSS", "Flask"],
-            "Tools": ["Figma", "Git", "Postman"]
-        },
-        "work_experience": [
-            {
-                "title": "Intern",
-                "company": "Edubot",
-                "duration": "Jun 2025 – Jul 2025",
-                "description": [
-                    "Worked on career recommendation engine.",
-                    "Integrated OpenRouter API with Flask backend."
-                ]
-            }
-        ],
-        "projects": [
-            {
-                "title": "CareerCraft – Flask",
-                "tech": "Flask, PostgreSQL",
-                "description": [
-                    "Built resume builder and AI job matcher.",
-                    "Integrated skill gap analyzer and interview simulator."
-                ]
-            }
-        ],
-        "education": [
-            {
-                "degree": "B.Tech CSE",
-                "institution": "SRM University – AP",
-                "years": "2022 – 2026",
-                "cgpa": "8.3"
-            },
-            {
-                "degree": "Junior College",
-                "institution": "Narayana",
-                "years": "2020 – 2022",
-                "cgpa": "94.9"
-            }
-        ]
-    }
+    try:
+        # Fetch the latest resume data
+        resume = Resume.query.filter_by(user_id=current_user.id).order_by(Resume.created_at.desc()).first()
+        if not resume:
+            flash('No resume found.', 'warning')
+            return redirect(url_for('resume.resume_builder'))
 
-    html = render_template("resume/resume_template.html", **user_data)
-    result = io.BytesIO()
-    pisa.CreatePDF(html, dest=result)
-    result.seek(0)
-    return send_file(result, download_name="resume.pdf", as_attachment=True) 
+        # Parse resume data
+        data = json.loads(resume.data) if resume.data else {}
+
+        # Generate PDF
+        pdf_buffer = BytesIO()
+        pdf = canvas.Canvas(pdf_buffer, pagesize=letter)
+        pdf.setTitle("Resume")
+        pdf.drawString(100, 750, "Resume")
+        pdf.drawString(100, 730, f"Full Name: {data.get('personal', {}).get('fullName', 'N/A')}")
+        pdf.drawString(100, 710, f"Email: {data.get('personal', {}).get('email', 'N/A')}")
+        pdf.drawString(100, 690, f"Phone: {data.get('personal', {}).get('phone', 'N/A')}")
+        pdf.drawString(100, 670, f"Summary: {data.get('personal', {}).get('summary', 'N/A')}")
+        pdf.drawString(100, 650, "Education:")
+        y = 630
+        for edu in data.get('education', []):
+            pdf.drawString(100, y, f"{edu.get('institution', 'N/A')} - {edu.get('degree', 'N/A')} ({edu.get('year', 'N/A')})")
+            y -= 20
+        pdf.drawString(100, y, "Experience:")
+        y -= 20
+        for exp in data.get('experience', []):
+            pdf.drawString(100, y, f"{exp.get('title', 'N/A')} at {exp.get('company', 'N/A')} ({exp.get('duration', 'N/A')})")
+            y -= 20
+        pdf.drawString(100, y, "Projects:")
+        y -= 20
+        for proj in data.get('projects', []):
+            pdf.drawString(100, y, f"{proj.get('title', 'N/A')}: {proj.get('description', 'N/A')}")
+            y -= 20
+        pdf.drawString(100, y, "Skills:")
+        y -= 20
+        for skill in data.get('skills', []):
+            pdf.drawString(100, y, skill)
+            y -= 20
+        pdf.save()
+
+        # Return PDF as response
+        pdf_buffer.seek(0)
+        response = make_response(pdf_buffer.read())
+        response.headers['Content-Type'] = 'application/pdf'
+        response.headers['Content-Disposition'] = 'attachment; filename=resume.pdf'
+        return response
+    except Exception as e:
+        flash(f'An error occurred: {str(e)}', 'danger')
+        return redirect(url_for('resume.resume_builder'))

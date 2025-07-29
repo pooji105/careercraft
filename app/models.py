@@ -1,4 +1,5 @@
-from app import db, login_manager
+from app.extensions import db
+from app import login_manager
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
@@ -9,9 +10,9 @@ def load_user(user_id):
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(128))
+    name = db.Column(db.String(150), nullable=False)  # Increased from 100 to 150
+    email = db.Column(db.String(150), unique=True, nullable=False)  # Increased from 120 to 150
+    password_hash = db.Column(db.String(512), nullable=False)  # Increased to 512 to be safe
     current_role = db.Column(db.String(100))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -32,10 +33,15 @@ class User(UserMixin, db.Model):
         return f'<User {self.email}>'
 
 class Resume(db.Model):
+    __tablename__ = 'resumes'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    data_json = db.Column(db.Text, nullable=False)  # Store JSON as text
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    data = db.Column(db.Text, nullable=True)  # Added the 'data' field
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    updated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
+
+    def __repr__(self):
+        return f'<Resume {self.id}>'
 
 class UploadedResume(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -58,15 +64,90 @@ class Skill(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
-    category = db.Column(db.String(100))
-    rating = db.Column(db.Integer)  # 1-5 or 1-10 scale
+    category = db.Column(db.String(50))
+    rating = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # The relationship is already defined in the User model
 
 class InterviewFeedback(db.Model):
+    __tablename__ = 'interview_feedback'
+    
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    questions_json = db.Column(db.Text, nullable=False)  # Store JSON as text
-    feedback_json = db.Column(db.Text, nullable=False)   # Store JSON as text
+    
+    # Resume information
+    resume_filename = db.Column(db.String(255), nullable=True)  # Uploaded resume file name or path
+    
+    # JSON storage for complete data with server defaults
+    questions_json = db.Column(db.Text, nullable=False, server_default='[]')  # Store questions as JSON array
+    answers_json = db.Column(db.Text, nullable=False, server_default='[]')    # Store answers as JSON array
+    model_answers_json = db.Column(db.Text, nullable=False, server_default='[]')  # Store ideal/model answers as JSON array
+    feedback_json = db.Column(db.Text, nullable=False, server_default='[]')   # Store AI feedback as JSON array
+    
+    # Individual fields for quick access (optional)
+    question = db.Column(db.Text, nullable=True)  # First question for quick reference
+    answer = db.Column(db.Text, nullable=True)    # First answer for quick reference
+    model_answer = db.Column(db.Text, nullable=True)  # First model answer for quick reference
+    feedback = db.Column(db.Text, nullable=True)  # First feedback for quick reference
+    
+    # Timestamp
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def to_dict(self):
+        """Convert model to dictionary for JSON serialization"""
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'resume_filename': self.resume_filename,
+            'questions_json': self.questions_json,
+            'answers_json': self.answers_json,
+            'model_answers_json': self.model_answers_json,
+            'feedback_json': self.feedback_json,
+            'question': self.question,
+            'answer': self.answer,
+            'model_answer': self.model_answer,
+            'feedback': self.feedback,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+    
+    def __repr__(self):
+        return f'<InterviewFeedback {self.id} - {self.question[:50] if self.question else "No question"}>'
+
+
+class InterviewResponse(db.Model):
+    __tablename__ = 'interview_response'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    resume_filename = db.Column(db.String(255), nullable=True)  # Uploaded resume file name or path
+    question = db.Column(db.Text, nullable=False)
+    answer = db.Column(db.Text, nullable=False)
+    verdict = db.Column(db.String(50), nullable=False)
+    feedback = db.Column(db.Text, nullable=False)
+    model_answer = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationship
+    user = db.relationship('User', backref='interview_responses')
+    
+    def to_dict(self):
+        """Convert model to dictionary for JSON serialization"""
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'resume_filename': self.resume_filename,
+            'question': self.question,
+            'answer': self.answer,
+            'verdict': self.verdict,
+            'feedback': self.feedback,
+            'model_answer': self.model_answer,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+    
+    def __repr__(self):
+        return f'<InterviewResponse {self.id} - {self.verdict}>'
 
 class JobMatch(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -87,4 +168,4 @@ class JobMatchHistory(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
-        return f'<JobMatchHistory {self.id} for User {self.user_id}>' 
+        return f'<JobMatchHistory {self.id} for User {self.user_id}>'

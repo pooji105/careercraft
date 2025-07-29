@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <h1>{{ resume.personal.fullName or "Unnamed" }}'s Resume</h1>
+    <p><strong>Email:</strong> {{ resume.personal.email or "Not provided" }}</p>
+    <p><strong>Phone:</strong> {{ resume.personal.phone or "Not provided" }}</p>
+    <p><strong>Summary:</strong> {{ resume.personal.summary or "Not provided" }}</p>
+
+    <h2>Skills</h2>
+    {% if resume.skills %}
+        <ul>
+            {% for skill in resume.skills %}
+                <li>{{ skill }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No skills listed.</p>
+    {% endif %}
+
+    <h2>Education</h2>
+    {% if resume.education %}
+        <ul>
+            {% for edu in resume.education %}
+                <li>{{ edu.degree }} - {{ edu.institution }} ({{ edu.year }})</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No education details provided.</p>
+    {% endif %}
+
+    <h2>Experience</h2>
+    {% if resume.experience %}
+        <ul>
+            {% for exp in resume.experience %}
+                <li>{{ exp.title }} at {{ exp.company }} ({{ exp.duration }})</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No experience added.</p>
+    {% endif %}
+
+    <h2>Projects</h2>
+    {% if resume.projects %}
+        <ul>
+            {% for proj in resume.projects %}
+                <li><strong>{{ proj.title }}</strong>: {{ proj.description }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No projects listed.</p>
+    {% endif %}
+</div>
+{% endblock %}
+    <div class="card my-4">
+        <div class="card-header bg-primary text-white">Projects</div>
+        <div class="card-body">
+            {% if data.projects %}
+            <ul>
+                {% for proj in data.projects %}
+                <li><strong>{{ proj.title }}</strong>: {{ proj.description }}</li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-muted">No project details provided.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

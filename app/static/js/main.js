@@ -203,71 +203,103 @@ document.addEventListener('DOMContentLoaded', function() {
             skillsList.appendChild(skillDiv);
             skillDiv.querySelector('.remove-skill').addEventListener('click', function() {
                 skillDiv.remove();
-            });
-        }
-        addSkillBtn.addEventListener('click', addSkillField);
     }
+    addSkillBtn.addEventListener('click', addSkillField);
+}
 
-    // Resume Builder form submission: collect all data and store in hidden input
-    const resumeForm = document.getElementById('resumeForm');
-    if (resumeForm) {
-        resumeForm.addEventListener('submit', function(event) {
-            // Gather personal info
-            const personal = {
-                fullName: document.getElementById('fullName')?.value || '',
-                email: document.getElementById('email')?.value || '',
-                phone: document.getElementById('phone')?.value || '',
-                summary: document.getElementById('summary')?.value || ''
-            };
+// Resume Builder form submission: collect all data and store in hidden input
+const resumeForm = document.getElementById('resumeForm');
+if (resumeForm) {
+    resumeForm.addEventListener('submit', function(event) {
+        // Prevent default form submission
+        event.preventDefault();
+        
+        // Basic form validation
+        const fullName = document.getElementById('fullName')?.value.trim();
+        const email = document.getElementById('email')?.value.trim();
+        
+        if (!fullName) {
+            alert('Please enter your full name');
+            document.getElementById('fullName').focus();
+            return false;
+        }
+        
+        if (!email) {
+            alert('Please enter your email address');
+            document.getElementById('email').focus();
+            return false;
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            alert('Please enter a valid email address');
+            document.getElementById('email').focus();
+            return false;
+        }
 
-            // Gather education
-            const education = [];
-            document.querySelectorAll('#education-list > .card').forEach(card => {
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
+
+        // Gather personal info
+        const personal = {
+            fullName: fullName,
+            email: email,
+            phone: document.getElementById('phone')?.value.trim() || '',
+            summary: document.getElementById('summary')?.value.trim() || ''
+        };
+
+        // Gather education
+        const education = [];
+        document.querySelectorAll('#education-list > .card').forEach(card => {
+            const institution = card.querySelector('input[name^="edu_institution_"]')?.value.trim() || '';
+            const degree = card.querySelector('input[name^="edu_degree_"]')?.value.trim() || '';
+            const year = card.querySelector('input[name^="edu_year_"]')?.value.trim() || '';
+            
+            if (institution || degree) {
                 education.push({
-                    institution: card.querySelector('input[name^="edu_institution_"]')?.value || '',
-                    degree: card.querySelector('input[name^="edu_degree_"]')?.value || '',
-                    year: card.querySelector('input[name^="edu_year_"]')?.value || ''
+                    institution: institution,
+                    degree: degree,
+                    year: year
                 });
-            });
-
-            // Gather experience
-            const experience = [];
-            document.querySelectorAll('#experience-list > .card').forEach(card => {
-                experience.push({
-                    company: card.querySelector('input[name^="exp_company_"]')?.value || '',
-                    role: card.querySelector('input[name^="exp_role_"]')?.value || '',
-                    duration: card.querySelector('input[name^="exp_duration_"]')?.value || '',
-                    description: card.querySelector('textarea[name^="exp_desc_"]')?.value || ''
-                });
-            });
-
-            // Gather projects
-            const projects = [];
-            document.querySelectorAll('#project-list > .card').forEach(card => {
-                projects.push({
-                    title: card.querySelector('input[name^="proj_title_"]')?.value || '',
-                    description: card.querySelector('textarea[name^="proj_desc_"]')?.value || ''
-                });
-            });
-
-            // Gather skills
-            const skills = [];
-            document.querySelectorAll('#skills-list > .card').forEach(card => {
-                skills.push(card.querySelector('input[name^="skill_"]')?.value || '');
-            });
-
-            // Store all in hidden input
-            const resumeDataInput = document.getElementById('resume_data');
-            if (resumeDataInput) {
-                resumeDataInput.value = JSON.stringify({ personal, education, experience, projects, skills });
             }
         });
-    }
 
-    // Utility functions
-    window.CareerCraft = {
-        // Show notification
-        showNotification: function(message, type = 'info') {
+        // Gather experience
+        const experience = [];
+        document.querySelectorAll('#experience-list > .card').forEach(card => {
+            const company = card.querySelector('input[name^="exp_company_"]')?.value.trim() || '';
+            const role = card.querySelector('input[name^="exp_role_"]')?.value.trim() || '';
+            
+            if (company || role) {
+                experience.push({
+                    company: company,
+                    role: role,
+                    duration: card.querySelector('input[name^="exp_duration_"]')?.value.trim() || '',
+                    description: card.querySelector('textarea[name^="exp_desc_"]')?.value.trim() || ''
+                });
+            }
+        });
+
+        // Gather projects
+        const projects = [];
+        document.querySelectorAll('#project-list > .card').forEach(card => {
+            const title = card.querySelector('input[name^="proj_title_"]')?.value.trim() || '';
+            const description = card.querySelector('textarea[name^="proj_desc_"]')?.value.trim() || '';
+            
+            if (title) {
+                projects.push({
+                    title: title,
+                    description: description
+                });
+            }
+        });
+
+        // Gather skills
+        const skills = [];
+        document.querySelectorAll('#skills-list > .card').forEach(card => {
+            const skill = card.querySelector('input[name^="skill_"]')?.value.trim() || '';
+            if (skill) {
+                skills.push(skill);
             var alertDiv = document.createElement('div');
             alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
             alertDiv.innerHTML = `

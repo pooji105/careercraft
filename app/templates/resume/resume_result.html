@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Resume Preview</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container py-4">
+        {% extends "base.html" %}
+
+        {% block content %}
+        <h1>{{ data.name }}'s Resume</h1>
+
+        <p><strong>Email:</strong> {{ data.email }}</p>
+
+        <h2>Skills</h2>
+        <p>{{ data.skills }}</p>
+
+        <h2>Education</h2>
+        <p>{{ data.education }}</p>
+
+        <h2>Experience</h2>
+        <p>{{ data.experience }}</p>
+
+        <!-- Debugging line: shows full structure -->
+        <pre>{{ data | tojson(indent=2) }}</pre>
+        {% endblock %}
+    </div>
+    <footer class="text-center mt-4">
+        <p>&copy; 2025 CareerCraft. All rights reserved.</p>
+        <p>Built with ❤️ for career success</p>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+</body>
+</html>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">Education</div>
+                    <div class="card-body">
+                        {% if data.education %}
+                        <ul class="list-unstyled">
+                            {% for edu in data.education %}
+                            <li><strong>{{ edu.institution }}</strong> - {{ edu.degree }} ({{ edu.year }})</li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="text-muted">No education details provided.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">Experience</div>
+                    <div class="card-body">
+                        {% if data.experience %}
+                        <ul class="list-unstyled">
+                            {% for exp in data.experience %}
+                            <li><strong>{{ exp.title }}</strong> at {{ exp.company }} ({{ exp.duration }})</li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="text-muted">No experience details provided.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">Projects</div>
+                    <div class="card-body">
+                        {% if data.projects %}
+                        <ul class="list-unstyled">
+                            {% for proj in data.projects %}
+                            <li><strong>{{ proj.title }}</strong>: {{ proj.description }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="text-muted">No project details provided.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">Skills</div>
+                    <div class="card-body">
+                        {% if data.skills %}
+                        <ul class="list-unstyled">
+                            {% for skill in data.skills %}
+                            <li>{{ skill }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="text-muted">No skills provided.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer class="text-center mt-4">
+        <p>&copy; 2025 CareerCraft. All rights reserved.</p>
+        <p>Built with ❤️ for career success</p>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

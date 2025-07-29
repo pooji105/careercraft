@@ -3,16 +3,21 @@
 {% block title %}Resume Templates - CareerCraft{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <h1 class="mb-4">Resume Templates</h1>
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Professional Resume Templates</h5>
-                <p class="card-text">Resume templates functionality coming soon...</p>
-                <a href="{{ url_for('main.home') }}" class="btn btn-primary">Back to Home</a>
+<div class="container py-4">
+    <h1 class="mb-4 text-center">Choose Your Resume Template</h1>
+    <div class="row">
+        {% for template in templates %}
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm">
+                <img src="{{ url_for('static', filename='images/templates/' + template.preview_image) }}" class="card-img-top" alt="Template Preview">
+                <div class="card-body">
+                    <h5 class="card-title">{{ template.name }}</h5>
+                    <p class="card-text">{{ template.description }}</p>
+                    <a href="{{ url_for('resume.select_template', template_id=template.id) }}" class="btn btn-primary w-100">Use This Template</a>
+                </div>
             </div>
         </div>
+        {% endfor %}
     </div>
 </div>
-{% endblock %} 
+{% endblock %}
