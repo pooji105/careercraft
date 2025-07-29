@@ -90,76 +90,66 @@
                                     {% endif %}
                                 </div>
                                 
-                                <!-- Evaluated Questions Section -->
-                                {% if evaluated_questions %}
-                                <!-- Debug: Show the number of evaluated questions -->
-                                <!-- DEBUG: {{ evaluated_questions|length }} questions loaded -->
-                                <!-- DEBUG: Session has {{ session.get('last_response_ids', 'None') }} -->
-                                <div class="card-header bg-light">
-                                    <h3 class="h5 mb-0">Evaluation Results</h3>
                                 </div>
-                                <div class="card-body">
-                                    {% for q in evaluated_questions %}
-                                    <div class="card mb-3">
-                                        <div class="card-body">
-                                            <h5 class="card-title">Question {{ loop.index }}:</h5>
-                                            <p><strong>{{ q.question }}</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-                                            <p><strong>Your Answer:</strong> {{ q.answer }}</p>
-                                            
+<!-- Evaluation Results Section - Separate Card -->
+{% if evaluated_questions %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h2 class="h4 mb-0">📊 Evaluation Results</h2>
+                </div>
+                <div class="card-body">
+                    {% for q in evaluated_questions %}
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">Question {{ loop.index }}:</h5>
+                            <p><strong>{{ q.question }}</strong></p>
 
+                            <p><strong>Your Answer:</strong> {{ q.answer }}</p>
 
-                                            {% if q.verdict|lower == 'correct' %}
-                                                <div class="alert alert-success">
-                                                    <strong>✅ {{ q.verdict }}</strong><br>
-                                                    <strong>Feedback:</strong> {{ q.feedback }}
-                                                </div>
-                                            {% elif q.verdict|lower == 'partially correct' %}
-                                                <div class="alert alert-warning">
-                                                    <strong>⚠️ {{ q.verdict }}</strong><br>
-                                                    <strong>Feedback:</strong> {{ q.feedback }}
-                                                </div>
-                                            {% else %}
-                                                <div class="alert alert-danger">
-                                                    <strong>❌ {{ q.verdict }}</strong><br>
-                                                    <strong>Feedback:</strong> {{ q.feedback }}
-                                                </div>
-                                            {% endif %}
-
-                                            {% if q.verdict|lower != 'correct' and q.model_answer %}
-                                            <div class="alert alert-info">
-                                                <strong>💡 Model Answer:</strong><br>
-                                                {{ q.model_answer }}
-                                            </div>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                    {% endfor %}
+                            {% if q.verdict|lower == 'correct' %}
+                                <div class="alert alert-success">
+                                    <strong>✅ {{ q.verdict }}</strong><br>
+                                    <strong>Feedback:</strong> {{ q.feedback }}
                                 </div>
-                                {% endif %}
-                                
-                                <div class="card-header bg-light">
-                                    <h3 class="h5 mb-0">Generated Questions</h3>
+                            {% elif q.verdict|lower == 'partially correct' %}
+                                <div class="alert alert-warning">
+                                    <strong>⚠️ {{ q.verdict }}</strong><br>
+                                    <strong>Feedback:</strong> {{ q.feedback }}
                                 </div>
-                                <div class="card-body">
-                                    {% if questions %}
-                                        <div class="list-group">
-                                            {% for question in questions %}
-                                                <div class="list-group-item">
-                                                    <div class="d-flex w-100 justify-content-between">
-                                                        <h5 class="mb-1">Question {{ loop.index }}</h5>
-                                                    </div>
-                                                    <p class="mb-1">{{ question }}</p>
-                                                </div>
-                                            {% endfor %}
-                                        </div>
-                                    {% else %}
-                                        <div class="text-center text-muted py-4">
-                                            <i class="bi bi-chat-square-text display-4 mb-3"></i>
-                                            <p class="mb-0">No questions generated yet. Enter your details on the left to get started.</p>
-                                        </div>
-                                    {% endif %}
+                            {% else %}
+                                <div class="alert alert-danger">
+                                    <strong>❌ {{ q.verdict }}</strong><br>
+                                    <strong>Feedback:</strong> {{ q.feedback }}
                                 </div>
+                            {% endif %}
+
+                            {% if q.verdict|lower != 'correct' and q.model_answer %}
+                            <div class="alert alert-info">
+                                <strong>💡 Model Answer:</strong><br>
+                                {{ q.model_answer }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
                             </div>
                         </div>
                     </div>
@@ -260,17 +250,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     setTimeout(() => {
                         window.location.reload();
                     }, 1500);
-                    });
-                    
-                    // Show success message
-                    const successAlert = document.createElement('div');
-                    successAlert.className = 'alert alert-success alert-dismissible fade show mt-3';
-                    successAlert.innerHTML = `
-                        <i class="bi bi-check-circle me-2"></i>
-                        Your answers have been evaluated successfully!
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    `;
-                    form.appendChild(successAlert);
                     
                 } else {
                     // Show error message
