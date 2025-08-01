@@ -18,7 +18,7 @@ class User(UserMixin, db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     resumes = db.relationship('Resume', backref='user', lazy=True)
-    uploaded_resumes = db.relationship('UploadedResume', backref='user', lazy=True)
+    resume_analyzers = db.relationship('ResumeAnalyzer', backref='user', lazy=True)
     job_applications = db.relationship('JobApplication', backref='user', lazy=True)
     skills = db.relationship('Skill', backref='user', lazy=True)
     interview_feedbacks = db.relationship('InterviewFeedback', backref='user', lazy=True)
@@ -118,7 +118,8 @@ class UserSkills(db.Model):
     def __repr__(self):
         return f'<UserSkills {self.name} ({self.category})>'
 
-class UploadedResume(db.Model):
+class ResumeAnalyzer(db.Model):
+    __tablename__ = 'resume_analyzer'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     filename = db.Column(db.String(255), nullable=False)

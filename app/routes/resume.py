@@ -9,7 +9,7 @@ from app.utils.file_utils import html_to_pdf
 from app.utils.helpers import clean_resume_data
 from xhtml2pdf import pisa
 from werkzeug.utils import secure_filename
-from app.models import UploadedResume
+from app.models import ResumeAnalyzer
 from app.utils.ai_utils import analyze_resume
 import tempfile
 from app.models import JobMatch, JobMatchHistory
@@ -475,20 +475,20 @@ def resume_analyzer():
                 ai_result = analyze_resume(text)
                 if 'feedback' in ai_result:
                     feedback = ai_result['feedback']
-                    # Store in UploadedResume
-                    uploaded = UploadedResume(user_id=current_user.id, filename=filename, suggestions=feedback)
+                    # Store in ResumeAnalyzer
+                    uploaded = ResumeAnalyzer(user_id=current_user.id, filename=filename, suggestions=feedback)
                     db.session.add(uploaded)
                     db.session.commit()
                 else:
                     error = ai_result.get('error', 'Unknown error from AI analysis.')
     # Fetch all past uploads for this user, most recent first
-    past_uploads = UploadedResume.query.filter_by(user_id=current_user.id).order_by(UploadedResume.created_at.desc()).all()
+    past_uploads = ResumeAnalyzer.query.filter_by(user_id=current_user.id).order_by(ResumeAnalyzer.created_at.desc()).all()
     return render_template('resume/resume_upload.html', feedback=feedback, error=error, past_uploads=past_uploads)
 
 @resume_bp.route('/download-feedback/<int:upload_id>')
 @login_required
 def download_feedback(upload_id):
-    upload = UploadedResume.query.get_or_404(upload_id)
+    upload = ResumeAnalyzer.query.get_or_404(upload_id)
     if upload.user_id != current_user.id:
         abort(403)
     

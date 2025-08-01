@@ -1,5 +1,5 @@
 from app import create_app, db
-from app.models import User, Resume, UploadedResume, JobApplication, Skill, InterviewFeedback, JobMatch, JobMatchHistory
+from app.models import User, Resume, ResumeAnalyzer, JobApplication, Skill, InterviewFeedback, JobMatch, JobMatchHistory
 
 def reset_database():
     app = create_app()
