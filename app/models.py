@@ -24,6 +24,13 @@ class User(UserMixin, db.Model):
     interview_feedbacks = db.relationship('InterviewFeedback', backref='user', lazy=True)
     job_matches = db.relationship('JobMatch', backref='user', lazy=True)
     job_match_histories = db.relationship('JobMatchHistory', backref='user', lazy=True)
+    
+    # Resume builder relationships
+    personal_info = db.relationship('UserPersonalInfo', backref='user', lazy=True, uselist=False)
+    education = db.relationship('UserEducation', backref='user', lazy=True, cascade='all, delete-orphan')
+    experience = db.relationship('UserExperience', backref='user', lazy=True, cascade='all, delete-orphan')
+    projects = db.relationship('UserProjects', backref='user', lazy=True, cascade='all, delete-orphan')
+    resume_skills = db.relationship('UserSkills', backref='user', lazy=True, cascade='all, delete-orphan')
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -42,6 +49,74 @@ class Resume(db.Model):
 
     def __repr__(self):
         return f'<Resume {self.id}>'
+
+class UserPersonalInfo(db.Model):
+    __tablename__ = 'user_personal_info'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    full_name = db.Column(db.String(150), nullable=False)
+    email = db.Column(db.String(150), nullable=False)
+    phone = db.Column(db.String(20))
+    summary = db.Column(db.Text)
+    linkedin_display = db.Column(db.String(100))
+    linkedin_url = db.Column(db.String(255))
+    github_display = db.Column(db.String(100))
+    github_url = db.Column(db.String(255))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<UserPersonalInfo {self.full_name}>'
+
+class UserEducation(db.Model):
+    __tablename__ = 'user_education'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    institution = db.Column(db.String(200), nullable=False)
+    degree = db.Column(db.String(150), nullable=False)
+    year = db.Column(db.String(20))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<UserEducation {self.institution} - {self.degree}>'
+
+class UserExperience(db.Model):
+    __tablename__ = 'user_experience'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    title = db.Column(db.String(150), nullable=False)
+    company = db.Column(db.String(150), nullable=False)
+    duration = db.Column(db.String(100))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<UserExperience {self.title} at {self.company}>'
+
+class UserProjects(db.Model):
+    __tablename__ = 'user_projects'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    title = db.Column(db.String(150), nullable=False)
+    description = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<UserProjects {self.title}>'
+
+class UserSkills(db.Model):
+    __tablename__ = 'user_skills'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    category = db.Column(db.String(50), default='General')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<UserSkills {self.name} ({self.category})>'
 
 class UploadedResume(db.Model):
     id = db.Column(db.Integer, primary_key=True)

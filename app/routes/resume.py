@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_file, make_response, session
 from flask_login import login_required, current_user
 from app import db
-from app.models import Resume
+from app.models import Resume, UserPersonalInfo, UserEducation, UserExperience, UserProjects, UserSkills
 import json
 import io
 from datetime import datetime
@@ -25,6 +25,184 @@ except ImportError:
 
 resume_bp = Blueprint('resume', __name__)
 
+def save_personal_info(user_id, personal_data):
+    """Save or update personal information"""
+    try:
+        # Check if personal info already exists
+        personal_info = UserPersonalInfo.query.filter_by(user_id=user_id).first()
+        
+        if personal_info:
+            # Update existing
+            personal_info.full_name = personal_data.get('fullName', '')
+            personal_info.email = personal_data.get('email', '')
+            personal_info.phone = personal_data.get('phone', '')
+            personal_info.summary = personal_data.get('summary', '')
+            personal_info.linkedin_display = personal_data.get('linkedin', '')
+            personal_info.github_display = personal_data.get('github', '')
+            personal_info.updated_at = datetime.utcnow()
+        else:
+            # Create new
+            personal_info = UserPersonalInfo(
+                user_id=user_id,
+                full_name=personal_data.get('fullName', ''),
+                email=personal_data.get('email', ''),
+                phone=personal_data.get('phone', ''),
+                summary=personal_data.get('summary', ''),
+                linkedin_display=personal_data.get('linkedin', ''),
+                github_display=personal_data.get('github', '')
+            )
+            db.session.add(personal_info)
+        
+        db.session.commit()
+        return True
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error saving personal info: {e}")
+        return False
+
+def save_education(user_id, education_data):
+    """Save or update education information"""
+    try:
+        # Delete existing education records for this user
+        UserEducation.query.filter_by(user_id=user_id).delete()
+        
+        # Add new education records
+        for edu in education_data:
+            if edu.get('institution') and edu.get('degree'):
+                education = UserEducation(
+                    user_id=user_id,
+                    institution=edu.get('institution', ''),
+                    degree=edu.get('degree', ''),
+                    year=edu.get('year', '')
+                )
+                db.session.add(education)
+        
+        db.session.commit()
+        return True
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error saving education: {e}")
+        return False
+
+def save_experience(user_id, experience_data):
+    """Save or update experience information"""
+    try:
+        # Delete existing experience records for this user
+        UserExperience.query.filter_by(user_id=user_id).delete()
+        
+        # Add new experience records
+        for exp in experience_data:
+            if exp.get('title') and exp.get('company'):
+                experience = UserExperience(
+                    user_id=user_id,
+                    title=exp.get('title', ''),
+                    company=exp.get('company', ''),
+                    duration=exp.get('duration', '')
+                )
+                db.session.add(experience)
+        
+        db.session.commit()
+        return True
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error saving experience: {e}")
+        return False
+
+def save_projects(user_id, projects_data):
+    """Save or update projects information"""
+    try:
+        # Delete existing project records for this user
+        UserProjects.query.filter_by(user_id=user_id).delete()
+        
+        # Add new project records
+        for proj in projects_data:
+            if proj.get('title'):
+                project = UserProjects(
+                    user_id=user_id,
+                    title=proj.get('title', ''),
+                    description=proj.get('description', '')
+                )
+                db.session.add(project)
+        
+        db.session.commit()
+        return True
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error saving projects: {e}")
+        return False
+
+def save_skills(user_id, skills_data):
+    """Save or update skills information"""
+    try:
+        # Delete existing skill records for this user
+        UserSkills.query.filter_by(user_id=user_id).delete()
+        
+        # Add new skill records
+        for skill in skills_data:
+            if skill.get('name'):
+                user_skill = UserSkills(
+                    user_id=user_id,
+                    name=skill.get('name', ''),
+                    category=skill.get('category', 'General')
+                )
+                db.session.add(user_skill)
+        
+        db.session.commit()
+        return True
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error saving skills: {e}")
+        return False
+
+def get_user_resume_data(user_id):
+    """Get all resume data for a user from the new models"""
+    try:
+        personal_info = UserPersonalInfo.query.filter_by(user_id=user_id).first()
+        education = UserEducation.query.filter_by(user_id=user_id).all()
+        experience = UserExperience.query.filter_by(user_id=user_id).all()
+        projects = UserProjects.query.filter_by(user_id=user_id).all()
+        skills = UserSkills.query.filter_by(user_id=user_id).all()
+        
+        return {
+            'personal': {
+                'fullName': personal_info.full_name if personal_info else '',
+                'email': personal_info.email if personal_info else '',
+                'phone': personal_info.phone if personal_info else '',
+                'summary': personal_info.summary if personal_info else '',
+                'linkedin': personal_info.linkedin_display if personal_info else '',
+                'github': personal_info.github_display if personal_info else ''
+            },
+            'education': [
+                {
+                    'institution': edu.institution,
+                    'degree': edu.degree,
+                    'year': edu.year
+                } for edu in education
+            ],
+            'experience': [
+                {
+                    'title': exp.title,
+                    'company': exp.company,
+                    'duration': exp.duration
+                } for exp in experience
+            ],
+            'projects': [
+                {
+                    'title': proj.title,
+                    'description': proj.description
+                } for proj in projects
+            ],
+            'skills': [
+                {
+                    'name': skill.name,
+                    'category': skill.category
+                } for skill in skills
+            ]
+        }
+    except Exception as e:
+        print(f"Error getting user resume data: {e}")
+        return None
+
 @resume_bp.route('/resume-builder', methods=['GET', 'POST'])
 @login_required
 def resume_builder():
@@ -42,31 +220,38 @@ def resume_builder():
             raw_data = json.loads(form_data)
             print(f"DEBUG: Parsed raw_data: {raw_data}")  # Debug: Show parsed data
             
-            # Clean the data
-            cleaned_data = clean_resume_data(raw_data)
-            print(f"DEBUG: Cleaned data: {cleaned_data}")  # Debug: Show cleaned data
+            # Save data step-wise to the new models
+            success = True
             
-            # Convert to JSON string for storage
-            data_json = json.dumps(cleaned_data)
+            # Save personal information
+            if 'personal' in raw_data and raw_data['personal']:
+                if not save_personal_info(current_user.id, raw_data['personal']):
+                    success = False
             
-            # Check if user already has a resume
-            existing_resume = Resume.query.filter_by(user_id=current_user.id).order_by(Resume.created_at.desc()).first()
+            # Save education
+            if 'education' in raw_data and raw_data['education']:
+                if not save_education(current_user.id, raw_data['education']):
+                    success = False
             
-            if existing_resume:
-                # Update existing resume
-                existing_resume.data = data_json
-                existing_resume.updated_at = datetime.utcnow()
-                db.session.commit()
-                flash('Resume updated successfully!', 'success')
+            # Save experience
+            if 'experience' in raw_data and raw_data['experience']:
+                if not save_experience(current_user.id, raw_data['experience']):
+                    success = False
+            
+            # Save projects
+            if 'projects' in raw_data and raw_data['projects']:
+                if not save_projects(current_user.id, raw_data['projects']):
+                    success = False
+            
+            # Save skills
+            if 'skills' in raw_data and raw_data['skills']:
+                if not save_skills(current_user.id, raw_data['skills']):
+                    success = False
+            
+            if success:
+                flash('Resume data saved successfully!', 'success')
             else:
-                # Create new resume
-                new_resume = Resume(
-                    user_id=current_user.id,
-                    data=data_json
-                )
-                db.session.add(new_resume)
-                db.session.commit()
-                flash('Resume created successfully!', 'success')
+                flash('Some data could not be saved. Please try again.', 'warning')
             
             return redirect(url_for('resume.view_latest_resume'))
             
@@ -79,8 +264,9 @@ def resume_builder():
             flash(f'An error occurred: {str(e)}', 'danger')
             return redirect(url_for('resume.resume_builder'))
 
-    # Ensure the correct path to the template
-    return render_template('resume/resume_builder.html')
+    # Get existing data for the form
+    existing_data = get_user_resume_data(current_user.id)
+    return render_template('resume/resume_builder.html', edit_mode=False, existing_data=existing_data)
 
 @resume_bp.route('/resume/<int:resume_id>')
 @login_required
@@ -93,17 +279,13 @@ def view_resume(resume_id):
 @login_required
 def view_latest_resume():
     try:
-        # Fetch the latest resume data for the logged-in user
-        resume = Resume.query.filter_by(user_id=current_user.id).order_by(Resume.id.desc()).first()
-        print(f"DEBUG: Found resume: {resume}")  # Debug: Show if resume found
-
-        if resume:
-            print(f"DEBUG: Resume data from DB: {resume.data[:200]}...")  # Debug: Show first 200 chars
-            # Parse the resume JSON data
-            parsed_resume = json.loads(resume.data)
-            print(f"DEBUG: Parsed resume for display: {parsed_resume}")  # Debug: Show parsed data
+        # Get resume data from the new models
+        parsed_resume = get_user_resume_data(current_user.id)
+        
+        if parsed_resume:
+            print(f"DEBUG: Found resume data from new models: {parsed_resume}")
         else:
-            print("DEBUG: No resume found, using defaults")  # Debug: Show when using defaults
+            print("DEBUG: No resume data found, using defaults")
             # Provide safe defaults if no resume exists
             parsed_resume = {
                 "personal": {"fullName": "", "email": "", "phone": "", "summary": ""},
@@ -119,6 +301,71 @@ def view_latest_resume():
         print(f"DEBUG: Error in view_latest_resume: {e}")  # Debug: Show any errors
         flash(f"An error occurred: {str(e)}", "danger")
         return redirect(url_for('resume.resume_builder'))
+
+@resume_bp.route('/save-personal-info', methods=['POST'])
+@login_required
+def save_personal_info_step():
+    """Save personal information step"""
+    try:
+        data = request.get_json()
+        if save_personal_info(current_user.id, data):
+            return jsonify({'success': True, 'message': 'Personal information saved successfully'})
+        else:
+            return jsonify({'success': False, 'message': 'Failed to save personal information'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'})
+
+@resume_bp.route('/save-education', methods=['POST'])
+@login_required
+def save_education_step():
+    """Save education step"""
+    try:
+        data = request.get_json()
+        if save_education(current_user.id, data):
+            return jsonify({'success': True, 'message': 'Education information saved successfully'})
+        else:
+            return jsonify({'success': False, 'message': 'Failed to save education information'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'})
+
+@resume_bp.route('/save-experience', methods=['POST'])
+@login_required
+def save_experience_step():
+    """Save experience step"""
+    try:
+        data = request.get_json()
+        if save_experience(current_user.id, data):
+            return jsonify({'success': True, 'message': 'Experience information saved successfully'})
+        else:
+            return jsonify({'success': False, 'message': 'Failed to save experience information'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'})
+
+@resume_bp.route('/save-projects', methods=['POST'])
+@login_required
+def save_projects_step():
+    """Save projects step"""
+    try:
+        data = request.get_json()
+        if save_projects(current_user.id, data):
+            return jsonify({'success': True, 'message': 'Projects information saved successfully'})
+        else:
+            return jsonify({'success': False, 'message': 'Failed to save projects information'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'})
+
+@resume_bp.route('/save-skills', methods=['POST'])
+@login_required
+def save_skills_step():
+    """Save skills step"""
+    try:
+        data = request.get_json()
+        if save_skills(current_user.id, data):
+            return jsonify({'success': True, 'message': 'Skills information saved successfully'})
+        else:
+            return jsonify({'success': False, 'message': 'Failed to save skills information'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'})
 
 @resume_bp.route('/resume/<int:resume_id>/download')
 @login_required
@@ -137,11 +384,12 @@ def download_resume_pdf(resume_id):
 @resume_bp.route('/resume/download')
 @login_required
 def download_latest_resume_pdf():
-    resume = Resume.query.filter_by(user_id=current_user.id).order_by(Resume.created_at.desc()).first()
-    if not resume:
+    # Get resume data from the new models
+    data = get_user_resume_data(current_user.id)
+    if not data:
         flash('No resume found. Please create one.', 'info')
         return redirect(url_for('resume.resume_builder'))
-    data = json.loads(resume.data)
+    
     html = render_template('resume/pdf_template.html', data=data)
     pdf = html_to_pdf(html)
     if not pdf:
@@ -395,14 +643,11 @@ def download_matched_roles():
 @login_required
 def download_resume():
     try:
-        # Fetch the latest resume data
-        resume = Resume.query.filter_by(user_id=current_user.id).order_by(Resume.created_at.desc()).first()
-        if not resume:
+        # Get resume data from the new models
+        data = get_user_resume_data(current_user.id)
+        if not data:
             flash('No resume found.', 'warning')
             return redirect(url_for('resume.resume_builder'))
-
-        # Parse resume data
-        data = json.loads(resume.data) if resume.data else {}
 
         # Generate PDF
         pdf_buffer = BytesIO()
