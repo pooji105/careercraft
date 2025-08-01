@@ -8,7 +8,12 @@
         <div class="col-12 col-md-8 col-lg-7">
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-primary text-white">
-                    <h1 class="h4 mb-0">Job Role Matcher</h1>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h1 class="h4 mb-0">Job Role Matcher</h1>
+                        <a href="{{ url_for('resume.job_match_history') }}" class="btn btn-outline-light btn-sm">
+                            <i class="fas fa-history"></i> View History
+                        </a>
+                    </div>
                 </div>
                 <div class="card-body">
                     <form id="jobMatcherForm" method="POST" enctype="multipart/form-data">
@@ -80,106 +85,79 @@
         </form>
     </div>
     {% endif %}
-    {% if past_matches and past_matches|length > 0 %}
-    <div class="mt-5">
-        <h3 class="mb-3">Past Job Match Results</h3>
-        <div class="accordion" id="pastMatchesAccordion">
-            {% for match in past_matches %}
-            <div class="accordion-item">
-                <h2 class="accordion-header" id="headingMatch{{ loop.index }}">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMatch{{ loop.index }}" aria-expanded="false" aria-controls="collapseMatch{{ loop.index }}">
-                        <span class="fw-bold">{{ match.job_title }}</span>
-                        <span class="text-muted ms-3">{{ match.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
-                    </button>
-                </h2>
-                <div id="collapseMatch{{ loop.index }}" class="accordion-collapse collapse" aria-labelledby="headingMatch{{ loop.index }}" data-bs-parent="#pastMatchesAccordion">
-                    <div class="accordion-body">
-                        <p><strong>Skills:</strong> {{ match.skills }}</p>
-                        <p><strong>Certifications:</strong> {{ match.certifications }}</p>
-                        <form method="POST" action="{{ url_for('resume.delete_job_match', match_id=match.id) }}" style="display:inline;">
-                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this job match result?');">Delete</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-    {% if match_histories and match_histories|length > 0 %}
+    {% if past_job_match_results and past_job_match_results|length > 0 %}
     <div class="mt-5">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
-            <h3 class="mb-0">Match History</h3>
-            <a href="{{ url_for('resume.download_job_match_history') }}" class="btn btn-outline-secondary">
-                <i class="bi bi-download me-1"></i> Download History
+            <h3 class="mb-0">Past Job Match Results</h3>
+            <a href="{{ url_for('resume.job_match_history') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-clock-history me-1"></i> View Full History
             </a>
         </div>
-        <div class="mb-3">
-            <input type="text" id="historySearch" class="form-control" placeholder="Search match history (e.g., Python, Data Scientist)">
-        </div>
-        <div class="accordion" id="matchHistoryAccordion">
-            {% for hist in match_histories %}
+        <div class="accordion" id="pastJobMatchResultsAccordion">
+            {% for result in past_job_match_results[:5] %}
             <div class="accordion-item">
-                <h2 class="accordion-header" id="headingHist{{ loop.index }}">
+                <h2 class="accordion-header" id="headingResult{{ loop.index }}">
                     <div class="d-flex align-items-center justify-content-between">
-                        <button class="accordion-button collapsed flex-grow-1" type="button" data-bs-toggle="collapse" data-bs-target="#collapseHist{{ loop.index }}" aria-expanded="false" aria-controls="collapseHist{{ loop.index }}">
-                            <span class="fw-bold">{{ hist.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                        <button class="accordion-button collapsed flex-grow-1" type="button" data-bs-toggle="collapse" data-bs-target="#collapseResult{{ loop.index }}" aria-expanded="false" aria-controls="collapseResult{{ loop.index }}">
+                            <span class="fw-bold">
+                                {% if result.resume_file_name %}
+                                    {{ result.resume_file_name }}
+                                {% elif result.interests_or_skills %}
+                                    Skills/Interests Input
+                                {% else %}
+                                    Job Match Result
+                                {% endif %}
+                            </span>
+                            <span class="text-muted ms-3">{{ result.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
                         </button>
-                        <form method="POST" action="{{ url_for('resume.delete_job_match_history', history_id=hist.id) }}" class="ms-2" style="display:inline;">
-                            {{ csrf_token() }}
-                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this match history entry?');">Delete</button>
-                        </form>
                     </div>
                 </h2>
-                <div id="collapseHist{{ loop.index }}" class="accordion-collapse collapse" aria-labelledby="headingHist{{ loop.index }}" data-bs-parent="#matchHistoryAccordion">
+                <div id="collapseResult{{ loop.index }}" class="accordion-collapse collapse" aria-labelledby="headingResult{{ loop.index }}" data-bs-parent="#pastJobMatchResultsAccordion">
                     <div class="accordion-body">
+                        {% if result.resume_file_name %}
+                        <p><strong>Resume File:</strong> {{ result.resume_file_name }}</p>
+                        {% endif %}
+                        {% if result.interests_or_skills %}
+                        <p><strong>Skills/Interests:</strong> {{ result.interests_or_skills }}</p>
+                        {% endif %}
+                        {% if result.matched_roles %}
                         <div class="mb-3">
-                            <span class="fw-bold">Input:</span>
-                            <pre class="bg-light p-2">{{ hist.input_text }}</pre>
-                        </div>
-                        <div class="row g-4">
-                            {% for role in hist.roles %}
-                            <div class="col-12 col-md-6 col-lg-4">
-                                <div class="card h-100 shadow-sm">
-                                    <div class="card-header bg-secondary text-white fw-bold fs-5 text-center">{{ role.role or role.job_title }}</div>
-                                    <div class="card-body">
-                                        <div class="mb-3">
-                                            <span class="fw-bold">Required Skills:</span>
+                            <span class="fw-bold">Matched Roles:</span>
+                            <div class="row g-3 mt-2">
+                                {% for role in result.matched_roles %}
+                                <div class="col-12 col-md-6 col-lg-4">
+                                    <div class="card h-100 shadow-sm">
+                                        <div class="card-header bg-secondary text-white fw-bold fs-6 text-center">
+                                            {{ role.job_title if role.job_title else role.role if role.role else 'Job Role' }}
+                                        </div>
+                                        <div class="card-body">
+                                            {% if role.skills %}
                                             <div class="mb-2">
-                                                {% for skill in role.skills %}
-                                                <span class="badge bg-primary me-1 mb-1">{{ skill }}</span>
-                                                {% endfor %}
-                                            </div>
-                                        </div>
-                                        {% if role.certifications %}
-                                        <div class="mb-3">
-                                            <span class="fw-bold">Recommended Certifications / Resources:</span>
-                                            <div>
-                                                {% for cert in role.certifications %}
-                                                <span class="badge bg-warning text-dark me-1 mb-1">{{ cert }}</span>
-                                                {% endfor %}
-                                                {% if role.resources %}
-                                                    {% for res in role.resources %}
-                                                    <span class="badge bg-warning text-dark me-1 mb-1">{{ res }}</span>
+                                                <span class="fw-bold">Skills:</span>
+                                                <div>
+                                                    {% for skill in role.skills %}
+                                                    <span class="badge bg-primary me-1 mb-1">{{ skill }}</span>
                                                     {% endfor %}
-                                                {% endif %}
+                                                </div>
                                             </div>
-                                        </div>
-                                        {% elif role.resources %}
-                                        <div class="mb-3">
-                                            <span class="fw-bold">Recommended Resources:</span>
-                                            <div>
-                                                {% for res in role.resources %}
-                                                <span class="badge bg-warning text-dark me-1 mb-1">{{ res }}</span>
-                                                {% endfor %}
+                                            {% endif %}
+                                            {% if role.certifications %}
+                                            <div class="mb-2">
+                                                <span class="fw-bold">Certifications:</span>
+                                                <div>
+                                                    {% for cert in role.certifications %}
+                                                    <span class="badge bg-warning text-dark me-1 mb-1">{{ cert }}</span>
+                                                    {% endfor %}
+                                                </div>
                                             </div>
+                                            {% endif %}
                                         </div>
-                                        {% endif %}
                                     </div>
                                 </div>
+                                {% endfor %}
                             </div>
-                            {% endfor %}
                         </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>

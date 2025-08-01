@@ -12,7 +12,7 @@ from werkzeug.utils import secure_filename
 from app.models import ResumeAnalyzer
 from app.utils.ai_utils import analyze_resume
 import tempfile
-from app.models import JobMatch, JobMatchHistory
+from app.models import JobMatch, JobMatchHistory, JobMatchResult
 from app.utils.file_utils import export_job_match_history_txt
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
@@ -517,12 +517,17 @@ def job_matcher():
     error = None
     error_message = None
     input_text = ''
+    resume_file_name = None
+    resume_text = None
+    interests_or_skills = None
+    
     if request.method == 'POST':
         file = request.files.get('resume_file')
         manual_input = request.form.get('manual_input', '').strip()
+        
         if file and file.filename:
-            filename = secure_filename(file.filename)
-            ext = filename.rsplit('.', 1)[-1].lower()
+            resume_file_name = secure_filename(file.filename)
+            ext = resume_file_name.rsplit('.', 1)[-1].lower()
             try:
                 with tempfile.NamedTemporaryFile(delete=False, suffix='.'+ext) as tmp:
                     file.save(tmp.name)
@@ -548,10 +553,15 @@ def job_matcher():
                     os.remove(tmp_path)
                 except Exception:
                     pass
+            
+            if input_text and not error:
+                resume_text = input_text
         elif manual_input:
             input_text = manual_input
+            interests_or_skills = manual_input
         else:
             error = 'Please upload a resume or enter your skills/interests.'
+            
         if input_text and not error:
             from app.utils.ai_utils import match_job_roles
             ai_result = match_job_roles(input_text)
@@ -560,23 +570,50 @@ def job_matcher():
                 # Normalize: if roles is a list of strings, convert to list of dicts with all keys
                 if roles and isinstance(roles[0], str):
                     roles = [{'job_title': r, 'skills': None, 'certifications': None} for r in roles]
+                
+                # Save to JobMatchResult table
+                try:
+                    job_match_result = JobMatchResult(
+                        user_id=current_user.id,
+                        resume_file_name=resume_file_name,
+                        resume_text=resume_text,
+                        interests_or_skills=interests_or_skills,
+                        matched_roles=json.dumps(roles)
+                    )
+                    db.session.add(job_match_result)
+                    db.session.commit()
+                except Exception as e:
+                    print(f"Error saving job match result: {e}")
+                    db.session.rollback()
             else:
                 error = ai_result.get('error', 'Unknown error from AI analysis.')
                 error_message = ai_result.get('raw', None)
-    # Fetch all past job matches for this user, most recent first
-    past_matches = JobMatch.query.filter_by(user_id=current_user.id).order_by(JobMatch.created_at.desc()).all()
-    raw_histories = JobMatchHistory.query.filter_by(user_id=current_user.id).order_by(JobMatchHistory.created_at.desc()).all()
-    import json
-    parsed_match_histories = [
-        {
-            'id': hist.id,
-            'created_at': hist.created_at,
-            'input_text': hist.input_text,
-            'roles': json.loads(hist.matched_roles_json)
-        }
-        for hist in raw_histories
-    ]
-    return render_template('resume/job_matcher.html', roles=roles, error=error, error_message=error_message, past_matches=past_matches, match_histories=parsed_match_histories)
+    
+    # Fetch all past job match results for this user, most recent first
+    past_job_match_results = JobMatchResult.query.filter_by(user_id=current_user.id).order_by(JobMatchResult.created_at.desc()).all()
+    
+    # Parse the JSON data for each result
+    parsed_past_results = []
+    for result in past_job_match_results:
+        try:
+            matched_roles = json.loads(result.matched_roles) if result.matched_roles else []
+        except json.JSONDecodeError:
+            matched_roles = []
+        
+        parsed_past_results.append({
+            'id': result.id,
+            'resume_file_name': result.resume_file_name,
+            'resume_text': result.resume_text,
+            'interests_or_skills': result.interests_or_skills,
+            'matched_roles': matched_roles,
+            'created_at': result.created_at
+        })
+    
+    return render_template('resume/job_matcher.html', 
+                         roles=roles, 
+                         error=error, 
+                         error_message=error_message, 
+                         past_job_match_results=parsed_past_results)
 
 @resume_bp.route('/job-matcher/delete/<int:match_id>', methods=['POST'])
 @login_required
@@ -612,6 +649,54 @@ def download_job_match_history():
     file_data = export_job_match_history_txt(histories)
     from flask import send_file
     return send_file(file_data, as_attachment=True, download_name='job_match_history.txt', mimetype='text/plain')
+
+@resume_bp.route('/job-matcher/history')
+@login_required
+def job_match_history():
+    """Show all past job match results for the currently logged-in user"""
+    try:
+        # Fetch all job match results for the current user, most recent first
+        job_match_results = JobMatchResult.query.filter_by(user_id=current_user.id).order_by(JobMatchResult.created_at.desc()).all()
+        
+        # Parse the JSON data for each result
+        parsed_results = []
+        for result in job_match_results:
+            try:
+                matched_roles = json.loads(result.matched_roles) if result.matched_roles else []
+            except json.JSONDecodeError:
+                matched_roles = []
+            
+            parsed_results.append({
+                'id': result.id,
+                'resume_file_name': result.resume_file_name,
+                'resume_text': result.resume_text[:200] + '...' if result.resume_text and len(result.resume_text) > 200 else result.resume_text,
+                'interests_or_skills': result.interests_or_skills,
+                'matched_roles': matched_roles,
+                'created_at': result.created_at
+            })
+        
+        return render_template('resume/job_match_history.html', job_match_results=parsed_results)
+    except Exception as e:
+        flash(f'Error loading job match history: {str(e)}', 'danger')
+        return redirect(url_for('resume.job_matcher'))
+
+@resume_bp.route('/job-matcher/history/delete/<int:result_id>', methods=['POST'])
+@login_required
+def delete_job_match_result(result_id):
+    """Delete a specific job match result"""
+    try:
+        result = JobMatchResult.query.get_or_404(result_id)
+        if result.user_id != current_user.id:
+            flash('Unauthorized action.', 'danger')
+            return redirect(url_for('resume.job_match_history'))
+        
+        db.session.delete(result)
+        db.session.commit()
+        flash('Job match result deleted successfully.', 'success')
+        return redirect(url_for('resume.job_match_history'))
+    except Exception as e:
+        flash(f'Error deleting job match result: {str(e)}', 'danger')
+        return redirect(url_for('resume.job_match_history'))
 
 @resume_bp.route('/download-matched-roles', methods=['POST'])
 def download_matched_roles():

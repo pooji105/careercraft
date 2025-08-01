@@ -24,6 +24,7 @@ class User(UserMixin, db.Model):
     interview_feedbacks = db.relationship('InterviewFeedback', backref='user', lazy=True)
     job_matches = db.relationship('JobMatch', backref='user', lazy=True)
     job_match_histories = db.relationship('JobMatchHistory', backref='user', lazy=True)
+    job_match_results = db.relationship('JobMatchResult', backref='user', lazy=True)
     
     # Resume builder relationships
     personal_info = db.relationship('UserPersonalInfo', backref='user', lazy=True, uselist=False)
@@ -245,3 +246,15 @@ class JobMatchHistory(db.Model):
 
     def __repr__(self):
         return f'<JobMatchHistory {self.id} for User {self.user_id}>'
+
+class JobMatchResult(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    resume_file_name = db.Column(db.String(255), nullable=True)  # name of the uploaded resume document
+    resume_text = db.Column(db.Text, nullable=True)  # extracted text from the resume
+    interests_or_skills = db.Column(db.Text, nullable=True)  # user input skills or interests
+    matched_roles = db.Column(db.Text, nullable=False)  # roles returned by AI (JSON format)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<JobMatchResult {self.id} for User {self.user_id}>'

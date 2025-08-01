@@ -46,4 +46,16 @@ def create_app():
     # Import models to ensure they are registered with SQLAlchemy
     from app.models import User
     
+    # Register custom Jinja2 filters
+    import json
+    @app.template_filter('from_json')
+    def from_json_filter(value):
+        """Parse JSON string to Python object"""
+        if not value:
+            return []
+        try:
+            return json.loads(value)
+        except (json.JSONDecodeError, TypeError):
+            return []
+    
     return app
