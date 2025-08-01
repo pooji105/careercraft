@@ -142,7 +142,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         fullName: document.getElementById('fullName')?.value || '',
                         email: document.getElementById('email')?.value || '',
                         phone: document.getElementById('phone')?.value || '',
-                        summary: document.getElementById('summary')?.value || ''
+                        summary: document.getElementById('summary')?.value || '',
+                        linkedin: document.getElementById('linkedin_display')?.value || '',
+                        github: document.getElementById('github_display')?.value || ''
                     },
                     education: [],
                     experience: [],
@@ -177,9 +179,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
 
                 // Collect skills
-                document.querySelectorAll('#skills-list .input-group').forEach((group, index) => {
-                    const skill = group.querySelector('input')?.value || '';
-                    if (skill) formData.skills.push(skill);
+                document.querySelectorAll('#skills-list .card').forEach((card, index) => {
+                    const skillName = card.querySelector(`[name^="skill_name_"]`)?.value || '';
+                    const skillCategory = card.querySelector(`[name^="skill_category_"]`)?.value || '';
+                    if (skillName) {
+                        formData.skills.push({
+                            name: skillName,
+                            category: skillCategory || 'General'
+                        });
+                    }
                 });
 
                 // Store in hidden field
@@ -268,11 +276,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Initialize education handlers when the DOM is loaded
-    document.addEventListener('DOMContentLoaded', function() {
-        setupEducationHandlers();
-    });
-
     // Add experience functionality
     function setupExperienceHandlers() {
         const experienceList = document.getElementById('experience-list');
@@ -440,28 +443,87 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Add skill functionality
-    const skillsList = document.getElementById('skills-list');
-    const addSkillBtn = document.getElementById('add-skill');
+    function setupSkillHandlers() {
+        const skillsList = document.getElementById('skills-list');
+        const addSkillBtn = document.getElementById('add-skill');
 
-    if (addSkillBtn) {
-        addSkillBtn.addEventListener('click', function() {
+        function addSkillEntry(skillData = {}) {
             const idx = skillsList.children.length;
             const skillHtml = `
-                <div class="input-group mb-2">
-                    <input type="text" class="form-control" placeholder="Skill" name="skill_${idx}" required>
-                    <button type="button" class="btn btn-sm btn-danger remove-skill">Remove</button>
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="skill_name_${idx}" 
+                                           name="skill_name_${idx}" placeholder="Skill Name" 
+                                           value="${skillData.name || ''}" required>
+                                    <label for="skill_name_${idx}">Skill Name</label>
+                                    <div class="form-text">e.g., Python, JavaScript, React</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <select class="form-control" id="skill_category_${idx}" 
+                                            name="skill_category_${idx}">
+                                        <option value="">Select Category</option>
+                                        <option value="Programming Languages" ${skillData.category === 'Programming Languages' ? 'selected' : ''}>Programming Languages</option>
+                                        <option value="Web Development" ${skillData.category === 'Web Development' ? 'selected' : ''}>Web Development</option>
+                                        <option value="Tools & Platforms" ${skillData.category === 'Tools & Platforms' ? 'selected' : ''}>Tools & Platforms</option>
+                                        <option value="AI & APIs" ${skillData.category === 'AI & APIs' ? 'selected' : ''}>AI & APIs</option>
+                                        <option value="App Development" ${skillData.category === 'App Development' ? 'selected' : ''}>App Development</option>
+                                        <option value="Databases" ${skillData.category === 'Databases' ? 'selected' : ''}>Databases</option>
+                                        <option value="Other" ${skillData.category === 'Other' ? 'selected' : ''}>Other</option>
+                                    </select>
+                                    <label for="skill_category_${idx}">Category</label>
+                                    <div class="form-text">Optional: Group related skills</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 text-end">
+                            <button type="button" class="btn btn-danger btn-sm remove-skill">
+                                <i class="bi bi-trash"></i> Remove
+                            </button>
+                        </div>
+                    </div>
                 </div>
             `;
+            
             skillsList.insertAdjacentHTML('beforeend', skillHtml);
-
-            const removeBtn = skillsList.lastElementChild.querySelector('.remove-skill');
+            
+            // Add event listener to the new remove button
+            const newCard = skillsList.lastElementChild;
+            const removeBtn = newCard.querySelector('.remove-skill');
             if (removeBtn) {
                 removeBtn.addEventListener('click', function() {
-                    this.closest('.input-group').remove();
+                    this.closest('.card').remove();
                 });
             }
-        });
+            
+            return newCard;
+        }
+        
+        // Add event listener for the Add Skill button
+        if (addSkillBtn) {
+            addSkillBtn.addEventListener('click', function() {
+                addSkillEntry();
+                skillsList.lastElementChild.scrollIntoView({ behavior: 'smooth' });
+            });
+        }
+        
+        // Add one empty skill field by default
+        if (skillsList.children.length === 0) {
+            addSkillEntry();
+        }
     }
+
+    // Initialize all handlers when the DOM is loaded
+    console.log('Initializing Resume Builder handlers...');
+    setupEducationHandlers();
+    setupExperienceHandlers();
+    setupProjectHandlers();
+    setupSkillHandlers();
+    console.log('All handlers initialized successfully!');
 
     {% if edit_mode and existing_data %}
     const existingData = {{ existing_data|tojson|safe }};
@@ -567,6 +629,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="card-body p-4">
                     <h2 class="mb-4 border-bottom pb-2">{% if edit_mode %}Edit Resume{% else %}Resume Builder{% endif %}</h2>
                     <form id="resumeForm" method="POST" novalidate>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div id="step-1" class="resume-step">
                             <h4 class="mb-3 border-bottom pb-1">Personal Information</h4>
                             <div class="row g-3 mb-3">
@@ -595,7 +658,35 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <div class="form-floating">
                                         <textarea class="form-control" id="summary" placeholder="Professional Summary" style="height: 100px"></textarea>
                                         <label for="summary">Professional Summary</label>
-                                        <div class="form-text">Briefly describe your background and goals.</div>
+                                        <div class="form-text">Write a compelling summary of your background, skills, and career goals (2-3 sentences).</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="linkedin_display" placeholder="LinkedIn Display Name">
+                                        <label for="linkedin_display">LinkedIn Display Name</label>
+                                        <div class="form-text">Name to show on resume (e.g., "Poojitha_Marella")</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="linkedin_url" placeholder="LinkedIn Profile URL">
+                                        <label for="linkedin_url">LinkedIn Profile URL</label>
+                                        <div class="form-text">Full LinkedIn URL (e.g., https://linkedin.com/in/username)</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="github_display" placeholder="GitHub Display Name">
+                                        <label for="github_display">GitHub Display Name</label>
+                                        <div class="form-text">Name to show on resume (e.g., "Pooji105")</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="github_url" placeholder="GitHub Profile URL">
+                                        <label for="github_url">GitHub Profile URL</label>
+                                        <div class="form-text">Full GitHub URL (e.g., https://github.com/username)</div>
                                     </div>
                                 </div>
                             </div>

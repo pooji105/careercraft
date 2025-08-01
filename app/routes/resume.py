@@ -4,6 +4,7 @@ from app import db
 from app.models import Resume
 import json
 import io
+from datetime import datetime
 from app.utils.file_utils import html_to_pdf
 from app.utils.helpers import clean_resume_data
 from xhtml2pdf import pisa
@@ -28,26 +29,58 @@ resume_bp = Blueprint('resume', __name__)
 @login_required
 def resume_builder():
     if request.method == 'POST':
-        # Capture data from the form
-        name = request.form.get('name', '').strip()
-        email = request.form.get('email', '').strip()
-        skills = request.form.get('skills', '').strip()
-        education = request.form.get('education', '').strip()
-        experience = request.form.get('experience', '').strip()
-
-        # Save it in session
-        session['resume_data'] = {
-            'name': name,
-            'email': email,
-            'skills': skills,
-            'education': education,
-            'experience': experience
-        }
-
-        return redirect(url_for('resume.view_latest_resume'))
+        # Get the JSON data from the form
+        form_data = request.form.get('resume_data')
+        print(f"DEBUG: Received form_data: {form_data[:200]}...")  # Debug: Show first 200 chars
+        
+        if not form_data:
+            flash('No data submitted.', 'danger')
+            return redirect(url_for('resume.resume_builder'))
+        
+        try:
+            # Parse the JSON data
+            raw_data = json.loads(form_data)
+            print(f"DEBUG: Parsed raw_data: {raw_data}")  # Debug: Show parsed data
+            
+            # Clean the data
+            cleaned_data = clean_resume_data(raw_data)
+            print(f"DEBUG: Cleaned data: {cleaned_data}")  # Debug: Show cleaned data
+            
+            # Convert to JSON string for storage
+            data_json = json.dumps(cleaned_data)
+            
+            # Check if user already has a resume
+            existing_resume = Resume.query.filter_by(user_id=current_user.id).order_by(Resume.created_at.desc()).first()
+            
+            if existing_resume:
+                # Update existing resume
+                existing_resume.data = data_json
+                existing_resume.updated_at = datetime.utcnow()
+                db.session.commit()
+                flash('Resume updated successfully!', 'success')
+            else:
+                # Create new resume
+                new_resume = Resume(
+                    user_id=current_user.id,
+                    data=data_json
+                )
+                db.session.add(new_resume)
+                db.session.commit()
+                flash('Resume created successfully!', 'success')
+            
+            return redirect(url_for('resume.view_latest_resume'))
+            
+        except json.JSONDecodeError as e:
+            print(f"DEBUG: JSON decode error: {e}")  # Debug: Show JSON error
+            flash('Invalid data format submitted.', 'danger')
+            return redirect(url_for('resume.resume_builder'))
+        except Exception as e:
+            print(f"DEBUG: General error: {e}")  # Debug: Show general error
+            flash(f'An error occurred: {str(e)}', 'danger')
+            return redirect(url_for('resume.resume_builder'))
 
     # Ensure the correct path to the template
-    return render_template('resume/resume_form.html')
+    return render_template('resume/resume_builder.html')
 
 @resume_bp.route('/resume/<int:resume_id>')
 @login_required
@@ -62,11 +95,15 @@ def view_latest_resume():
     try:
         # Fetch the latest resume data for the logged-in user
         resume = Resume.query.filter_by(user_id=current_user.id).order_by(Resume.id.desc()).first()
+        print(f"DEBUG: Found resume: {resume}")  # Debug: Show if resume found
 
         if resume:
+            print(f"DEBUG: Resume data from DB: {resume.data[:200]}...")  # Debug: Show first 200 chars
             # Parse the resume JSON data
             parsed_resume = json.loads(resume.data)
+            print(f"DEBUG: Parsed resume for display: {parsed_resume}")  # Debug: Show parsed data
         else:
+            print("DEBUG: No resume found, using defaults")  # Debug: Show when using defaults
             # Provide safe defaults if no resume exists
             parsed_resume = {
                 "personal": {"fullName": "", "email": "", "phone": "", "summary": ""},
@@ -76,8 +113,10 @@ def view_latest_resume():
                 "projects": []
             }
 
-        return render_template('view_latest_resume.html', resume=parsed_resume)
+        print(f"DEBUG: Final parsed_resume for template: {parsed_resume}")
+        return render_template('resume/view_latest_resume.html', resume=parsed_resume)
     except Exception as e:
+        print(f"DEBUG: Error in view_latest_resume: {e}")  # Debug: Show any errors
         flash(f"An error occurred: {str(e)}", "danger")
         return redirect(url_for('resume.resume_builder'))
 

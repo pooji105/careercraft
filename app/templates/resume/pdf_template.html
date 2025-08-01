@@ -2,171 +2,363 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Resume</title>
+    <title>Resume - {{ data.personal.fullName }}</title>
     <style>
-        body {
-            font-family: 'Georgia', 'Times New Roman', Times, serif;
-            color: #222;
+        * {
             margin: 0;
-            padding: 0 36px 36px 36px;
-            font-size: 15px;
-            background: #fff;
+            padding: 0;
+            box-sizing: border-box;
         }
+        
+        body {
+            font-family: 'Arial', 'Verdana', sans-serif;
+            color: #333;
+            background: #fff;
+            font-size: 11px;
+            line-height: 1.4;
+            padding: 25px 35px 35px 35px;
+        }
+        
+        /* Header Section */
         .header {
             text-align: center;
-            margin-top: 24px;
-            margin-bottom: 28px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #2c5aa0;
+            padding-bottom: 12px;
+            margin-top: 0;
         }
+        
         .name {
-            font-size: 2.2em;
+            font-family: 'Georgia', 'Times New Roman', serif;
+            font-size: 26px;
             font-weight: bold;
-            letter-spacing: 1px;
-            margin-bottom: 2px;
-        }
-        .title {
-            font-size: 1.1em;
-            color: #444;
+            color: #2c5aa0;
             margin-bottom: 8px;
+            margin-top: 0;
+            letter-spacing: 1px;
         }
-        .contact {
-            font-size: 1em;
-            color: #333;
-            margin-bottom: 0;
-        }
-        .summary {
+        
+        .contact-info {
+            font-size: 11px;
             color: #666;
-            font-size: 1em;
-            margin-top: 10px;
-            margin-bottom: 0;
+            line-height: 1.5;
         }
+        
+        .contact-info a {
+            color: #000;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        
+        /* Section Styling */
         .section {
-            margin-bottom: 28px;
+            margin-bottom: 20px;
             page-break-inside: avoid;
         }
+        
         .section-title {
-            font-size: 1.08em;
+            font-family: 'Georgia', 'Times New Roman', serif;
+            font-size: 15px;
             font-weight: bold;
+            color: #2c5aa0;
             text-transform: uppercase;
             letter-spacing: 1px;
-            color: #2a2a2a;
-            border-bottom: 1px solid #d3d3d3;
-            padding-bottom: 3px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+            position: relative;
+        }
+        
+        .section-title::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -1px;
+            width: 50px;
+            height: 2px;
+            background: #2c5aa0;
+        }
+        
+        /* Summary Section */
+        .summary-content {
+            font-size: 11px;
+            line-height: 1.5;
+            color: #555;
+            text-align: justify;
+            white-space: pre-wrap;
+            margin-bottom: 10px;
+        }
+        
+        /* Skills Section */
+        .skills-category {
+            margin-bottom: 8px;
+        }
+        
+        .skills-category-title {
+            font-weight: bold;
+            font-size: 11px;
+            color: #000;
+            margin-bottom: 3px;
+        }
+        
+        .skills-list {
+            font-size: 10px;
+            color: #555;
+            line-height: 1.4;
+        }
+        
+        .skill-item {
+            margin-bottom: 8px;
+            font-size: 11px;
+            color: #555;
+            padding: 2px 0;
+            line-height: 1.6;
+            display: block;
+            clear: both;
+        }
+        
+        /* Experience and Education Items */
+        .item {
             margin-bottom: 12px;
         }
-        .item {
-            margin-bottom: 14px;
+        
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 4px;
         }
-        .label {
+        
+        .item-title {
             font-weight: bold;
-            color: #222;
+            font-size: 12px;
+            color: #000;
         }
-        .muted {
-            color: #888;
-            font-size: 0.97em;
+        
+        .item-company {
+            font-weight: bold;
+            font-size: 11px;
+            color: #333;
         }
-        ul, ol {
-            margin: 0 0 0 22px;
-            padding: 0;
+        
+        .item-date {
+            font-size: 10px;
+            color: #666;
+            text-align: right;
+            white-space: nowrap;
         }
-        li {
-            margin-bottom: 5px;
-        }
-        .bullet-list {
-            list-style-type: disc;
-        }
-        .section-content {
+        
+        .item-description {
+            font-size: 10px;
+            color: #555;
+            line-height: 1.4;
             margin-left: 0;
         }
+        
+        .item-description ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .item-description li {
+            margin-bottom: 2px;
+            font-size: 10px;
+            color: #555;
+        }
+        
+        /* Projects Section */
+        .project-item {
+            margin-bottom: 10px;
+        }
+        
+        .project-title {
+            font-weight: bold;
+            font-size: 11px;
+            color: #000;
+            margin-bottom: 3px;
+        }
+        
+        .project-description {
+            font-size: 10px;
+            color: #555;
+            line-height: 1.4;
+        }
+        
+        /* Lists */
+        ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        li {
+            margin-bottom: 2px;
+            font-size: 10px;
+            color: #555;
+        }
+        
+        /* Print Styles */
         @media print {
             body {
                 -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
+            
             .section {
+                page-break-inside: avoid;
+            }
+            
+            .item {
                 page-break-inside: avoid;
             }
         }
     </style>
 </head>
 <body>
+    <!-- Header Section -->
     <div class="header">
-        <div class="name">{{ data.personal.fullName }}</div>
-        {% if data.personal.title %}<div class="title">{{ data.personal.title }}</div>{% endif %}
-        <div class="contact">{{ data.personal.email }}{% if data.personal.phone %} | {{ data.personal.phone }}{% endif %}</div>
-        {% if data.personal.summary %}<div class="summary">{{ data.personal.summary }}</div>{% endif %}
-    </div>
-
-    <div class="section">
-        <div class="section-title">Education</div>
-        <div class="section-content">
-        {% if data.education and data.education|length > 0 %}
-            <ul class="bullet-list">
-            {% for edu in data.education %}
-                <li class="item">
-                    <span class="label">{{ edu.degree }}</span> at {{ edu.institution }}
-                    {% if edu.year %}<span class="muted"> ({{ edu.year }})</span>{% endif %}
-                </li>
-            {% endfor %}
-            </ul>
-        {% else %}
-            <div class="muted">No education details provided.</div>
-        {% endif %}
+        <div class="name">{{ data.personal.fullName.upper() }}</div>
+        <div class="contact-info">
+            {{ data.personal.email }}
+            {% if data.personal.phone %} | {{ data.personal.phone }}{% endif %}
+            {% if data.personal.linkedin %} | LinkedIn: 
+                {% if data.personal.linkedin is string %}
+                    {% if data.personal.linkedin.startswith('http') %}
+                        <a href="{{ data.personal.linkedin }}">{{ data.personal.linkedin }}</a>
+                    {% else %}
+                        <a href="https://linkedin.com/in/{{ data.personal.linkedin }}">{{ data.personal.linkedin }}</a>
+                    {% endif %}
+                {% else %}
+                    {% if data.personal.linkedin.url %}
+                        <a href="{{ data.personal.linkedin.url }}">{{ data.personal.linkedin.display or 'LinkedIn' }}</a>
+                    {% elif data.personal.linkedin.display %}
+                        <a href="https://linkedin.com/in/{{ data.personal.linkedin.display }}">{{ data.personal.linkedin.display }}</a>
+                    {% endif %}
+                {% endif %}
+            {% endif %}
+            {% if data.personal.github %} | GitHub: 
+                {% if data.personal.github is string %}
+                    {% if data.personal.github.startswith('http') %}
+                        <a href="{{ data.personal.github }}">{{ data.personal.github }}</a>
+                    {% else %}
+                        <a href="https://github.com/{{ data.personal.github }}">{{ data.personal.github }}</a>
+                    {% endif %}
+                {% else %}
+                    {% if data.personal.github.url %}
+                        <a href="{{ data.personal.github.url }}">{{ data.personal.github.display or 'GitHub' }}</a>
+                    {% elif data.personal.github.display %}
+                        <a href="https://github.com/{{ data.personal.github.display }}">{{ data.personal.github.display }}</a>
+                    {% endif %}
+                {% endif %}
+            {% endif %}
         </div>
     </div>
 
+    <!-- Professional Summary Section -->
+    {% if data.personal and data.personal.summary %}
     <div class="section">
-        <div class="section-title">Experience</div>
-        <div class="section-content">
-        {% if data.experience and data.experience|length > 0 %}
-            <ul class="bullet-list">
-            {% for exp in data.experience %}
-                <li class="item">
-                    <span class="label">{{ exp.role }}</span> at {{ exp.company }}
-                    {% if exp.duration %}<span class="muted"> ({{ exp.duration }})</span>{% endif %}<br>
-                    {% if exp.description %}<span>{{ exp.description }}</span>{% endif %}
-                </li>
-            {% endfor %}
-            </ul>
-        {% else %}
-            <div class="muted">No experience details provided.</div>
-        {% endif %}
-        </div>
+        <div class="section-title">Profile</div>
+        <div class="summary-content">{{ data.personal.summary }}</div>
     </div>
+    {% endif %}
 
-    <div class="section">
-        <div class="section-title">Projects</div>
-        <div class="section-content">
-        {% if data.projects and data.projects|length > 0 %}
-            <ul class="bullet-list">
-            {% for proj in data.projects %}
-                <li class="item">
-                    <span class="label">{{ proj.title }}</span><br>
-                    {% if proj.description %}<span>{{ proj.description }}</span>{% endif %}
-                </li>
-            {% endfor %}
-            </ul>
-        {% else %}
-            <div class="muted">No project details provided.</div>
-        {% endif %}
-        </div>
-    </div>
-
+    <!-- Skills Section -->
+    {% if data.skills and data.skills|length > 0 %}
     <div class="section">
         <div class="section-title">Skills</div>
-        <div class="section-content">
-        {% if data.skills and data.skills|length > 0 %}
-            <ul class="bullet-list">
-            {% for skill in data.skills %}
-                <li class="item">
-                    <span class="label">{{ skill.name }}</span>
-                    {% if skill.category %}<span class="muted"> ({{ skill.category }})</span>{% endif %}
-                    {% if skill.rating %}<span class="muted"> - Rating: {{ skill.rating }}</span>{% endif %}
-                </li>
-            {% endfor %}
-            </ul>
-        {% else %}
-            <div class="muted">No skills provided.</div>
-        {% endif %}
-        </div>
+        {% set skill_categories = {} %}
+        {% for skill in data.skills %}
+            {% if skill is mapping and skill.category %}
+                {% if skill.category not in skill_categories %}
+                    {% set _ = skill_categories.update({skill.category: []}) %}
+                {% endif %}
+                {% set _ = skill_categories[skill.category].append(skill.name) %}
+            {% else %}
+                {% if 'General' not in skill_categories %}
+                    {% set _ = skill_categories.update({'General': []}) %}
+                {% endif %}
+                {% set skill_name = skill.name if skill is mapping else skill %}
+                {% set _ = skill_categories['General'].append(skill_name) %}
+            {% endif %}
+        {% endfor %}
+        
+        {% for category, skills_list in skill_categories.items() %}
+            <div class="skills-category">
+                <div class="skills-category-title">{{ category }}:</div>
+                <div class="skills-list">{{ skills_list|join(', ') }}</div>
+            </div>
+        {% endfor %}
     </div>
+    {% endif %}
+
+    <!-- Work Experience Section -->
+    {% if data.experience and data.experience|length > 0 %}
+    <div class="section">
+        <div class="section-title">Work Experience</div>
+        {% for exp in data.experience %}
+        <div class="item">
+            <div class="item-header">
+                <div>
+                    <div class="item-title">{{ exp.title or exp.role }}</div>
+                    <div class="item-company">{{ exp.company }}</div>
+                </div>
+                {% if exp.duration %}
+                <div class="item-date">{{ exp.duration }}</div>
+                {% endif %}
+            </div>
+            {% if exp.description %}
+            <div class="item-description">
+                {% if exp.description is string %}
+                    {{ exp.description }}
+                {% else %}
+                    <ul>
+                        {% for point in exp.description %}
+                        <li>{{ point }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Projects Section -->
+    {% if data.projects and data.projects|length > 0 %}
+    <div class="section">
+        <div class="section-title">Projects</div>
+        {% for proj in data.projects %}
+        <div class="project-item">
+            <div class="project-title">{{ proj.title }}</div>
+            {% if proj.description %}
+            <div class="project-description">{{ proj.description }}</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Education Section -->
+    {% if data.education and data.education|length > 0 %}
+    <div class="section">
+        <div class="section-title">Education</div>
+        {% for edu in data.education %}
+        <div class="item">
+            <div class="item-header">
+                <div>
+                    <div class="item-title">{{ edu.degree }}</div>
+                    <div class="item-company">{{ edu.institution }}</div>
+                </div>
+                {% if edu.year %}
+                <div class="item-date">{{ edu.year }}</div>
+                {% endif %}
+            </div>
+            {% if edu.description %}
+            <div class="item-description">{{ edu.description }}</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 </body>
 </html> 

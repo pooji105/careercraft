@@ -26,12 +26,20 @@ def clean_resume_data(data):
     - Sanitize inputs to remove repeated characters (e.g., 'Hhhhhhhhhhh') unless it looks like a valid word
     - For fields like links or descriptions, only keep the first instance if repeated
     """
-    def sanitize_text(text):
+    def sanitize_text(text, preserve_newlines=False):
         if not isinstance(text, str):
             return text
         # Remove repeated characters (3+ in a row, unless it's a valid word)
         # e.g., 'Hhhhhhhhhhh' -> 'Hhh'
-        return re.sub(r'(\w)\1{2,}', r'\1\1', text)
+        if preserve_newlines:
+            # For summary field, be more lenient - only remove very obvious repeated characters
+            # Don't sanitize if the text looks like legitimate content
+            if len(text.strip()) > 10 and not re.search(r'(\w)\1{5,}', text):
+                return text.strip()
+            else:
+                return re.sub(r'(\w)\1{2,}', r'\1\1', text.strip())
+        else:
+            return re.sub(r'(\w)\1{2,}', r'\1\1', text.strip())
 
     def clean_section(section, unique_fields=None, only_first_fields=None):
         if not isinstance(section, list):
@@ -66,7 +74,17 @@ def clean_resume_data(data):
     cleaned = {}
     # Clean personal info
     if 'personal' in data:
-        cleaned['personal'] = {k: sanitize_text(v.strip()) if isinstance(v, str) else v for k, v in data['personal'].items() if v and str(v).strip()}
+        cleaned['personal'] = {}
+        for k, v in data['personal'].items():
+            if v and str(v).strip():
+                if isinstance(v, str):
+                    if k == 'summary':
+                        # Preserve newlines in summary field
+                        cleaned['personal'][k] = sanitize_text(v.strip(), preserve_newlines=True)
+                    else:
+                        cleaned['personal'][k] = sanitize_text(v.strip())
+                else:
+                    cleaned['personal'][k] = v
     # Clean education
     if 'education' in data:
         cleaned['education'] = clean_section(data['education'])

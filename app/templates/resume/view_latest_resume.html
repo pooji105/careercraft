@@ -1,68 +1,162 @@
 {% extends "base.html" %}
 
+{% block title %}Resume Preview - CareerCraft{% endblock %}
+
 {% block content %}
 <div class="container py-4">
-    <h1>{{ resume.personal.fullName or "Unnamed" }}'s Resume</h1>
-    <p><strong>Email:</strong> {{ resume.personal.email or "Not provided" }}</p>
-    <p><strong>Phone:</strong> {{ resume.personal.phone or "Not provided" }}</p>
-    <p><strong>Summary:</strong> {{ resume.personal.summary or "Not provided" }}</p>
-
-    <h2>Skills</h2>
-    {% if resume.skills %}
-        <ul>
-            {% for skill in resume.skills %}
-                <li>{{ skill }}</li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>No skills listed.</p>
-    {% endif %}
-
-    <h2>Education</h2>
-    {% if resume.education %}
-        <ul>
-            {% for edu in resume.education %}
-                <li>{{ edu.degree }} - {{ edu.institution }} ({{ edu.year }})</li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>No education details provided.</p>
-    {% endif %}
-
-    <h2>Experience</h2>
-    {% if resume.experience %}
-        <ul>
-            {% for exp in resume.experience %}
-                <li>{{ exp.title }} at {{ exp.company }} ({{ exp.duration }})</li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>No experience added.</p>
-    {% endif %}
-
-    <h2>Projects</h2>
-    {% if resume.projects %}
-        <ul>
-            {% for proj in resume.projects %}
-                <li><strong>{{ proj.title }}</strong>: {{ proj.description }}</li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>No projects listed.</p>
-    {% endif %}
-</div>
-{% endblock %}
-    <div class="card my-4">
-        <div class="card-header bg-primary text-white">Projects</div>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold">Resume Preview</h2>
+        <div>
+            <a href="{{ url_for('resume.resume_builder') }}" class="btn btn-primary me-2">
+                <i class="bi bi-pencil-square"></i> Edit Resume
+            </a>
+            <a href="{{ url_for('resume.download_latest_resume_pdf') }}" class="btn btn-success">
+                <i class="bi bi-download"></i> Download as PDF
+            </a>
+        </div>
+    </div>
+    
+    <div class="card shadow-sm mb-4">
         <div class="card-body">
-            {% if data.projects %}
-            <ul>
-                {% for proj in data.projects %}
-                <li><strong>{{ proj.title }}</strong>: {{ proj.description }}</li>
-                {% endfor %}
-            </ul>
+            {% if resume.personal %}
+            <div class="mb-4">
+                <h4 class="text-primary fw-bold">Personal Information</h4>
+                <p><strong>Full Name:</strong> {{ resume.personal.fullName or "Not provided" }}</p>
+                <p><strong>Email:</strong> {{ resume.personal.email or "Not provided" }}</p>
+                <p><strong>Phone:</strong> {{ resume.personal.phone or "Not provided" }}</p>
+                {% if resume.personal.linkedin %}
+                <p><strong>LinkedIn:</strong> 
+                    {% if resume.personal.linkedin is string %}
+                        {% if resume.personal.linkedin.startswith('http') %}
+                            <a href="{{ resume.personal.linkedin }}" target="_blank" class="text-decoration-none">{{ resume.personal.linkedin }}</a>
+                        {% else %}
+                            <a href="https://linkedin.com/in/{{ resume.personal.linkedin }}" target="_blank" class="text-decoration-none">{{ resume.personal.linkedin }}</a>
+                        {% endif %}
+                    {% else %}
+                        {% if resume.personal.linkedin.url %}
+                            <a href="{{ resume.personal.linkedin.url }}" target="_blank" class="text-decoration-none">{{ resume.personal.linkedin.display or 'LinkedIn' }}</a>
+                        {% elif resume.personal.linkedin.display %}
+                            <a href="https://linkedin.com/in/{{ resume.personal.linkedin.display }}" target="_blank" class="text-decoration-none">{{ resume.personal.linkedin.display }}</a>
+                        {% endif %}
+                    {% endif %}
+                </p>
+                {% endif %}
+                {% if resume.personal.github %}
+                <p><strong>GitHub:</strong> 
+                    {% if resume.personal.github is string %}
+                        {% if resume.personal.github.startswith('http') %}
+                            <a href="{{ resume.personal.github }}" target="_blank" class="text-decoration-none">{{ resume.personal.github }}</a>
+                        {% else %}
+                            <a href="https://github.com/{{ resume.personal.github }}" target="_blank" class="text-decoration-none">{{ resume.personal.github }}</a>
+                        {% endif %}
+                    {% else %}
+                        {% if resume.personal.github.url %}
+                            <a href="{{ resume.personal.github.url }}" target="_blank" class="text-decoration-none">{{ resume.personal.github.display or 'GitHub' }}</a>
+                        {% elif resume.personal.github.display %}
+                            <a href="https://github.com/{{ resume.personal.github.display }}" target="_blank" class="text-decoration-none">{{ resume.personal.github.display }}</a>
+                        {% endif %}
+                    {% endif %}
+                </p>
+                {% endif %}
+            </div>
             {% else %}
-            <p class="text-muted">No project details provided.</p>
+            <p class="text-muted">No personal information available.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if resume.personal and resume.personal.summary %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <h4 class="mb-0"><i class="bi bi-person-badge me-2"></i>Professional Summary</h4>
+        </div>
+        <div class="card-body">
+            <p class="mb-0" style="white-space: pre-wrap; line-height: 1.6; word-wrap: break-word; overflow-wrap: break-word;">{{ resume.personal.summary }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <h4 class="mb-0">Skills</h4>
+        </div>
+        <div class="card-body">
+            {% if resume.skills %}
+            <div class="d-flex flex-wrap gap-2">
+                {% for skill in resume.skills %}
+                <span class="badge bg-primary">{{ skill }}</span>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted">No skills listed.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <h4 class="mb-0">Education</h4>
+        </div>
+        <div class="card-body">
+            {% if resume.education %}
+            <div class="row">
+                {% for edu in resume.education %}
+                <div class="col-md-6 mb-3">
+                    <div class="border rounded p-3">
+                        <h6 class="fw-bold">{{ edu.degree or "Degree not specified" }}</h6>
+                        <p class="mb-1">{{ edu.institution or "Institution not specified" }}</p>
+                        <small class="text-muted">{{ edu.year or "Year not specified" }}</small>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted">No education details provided.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <h4 class="mb-0">Experience</h4>
+        </div>
+        <div class="card-body">
+            {% if resume.experience %}
+            <div class="row">
+                {% for exp in resume.experience %}
+                <div class="col-12 mb-3">
+                    <div class="border rounded p-3">
+                        <h6 class="fw-bold">{{ exp.title or "Title not specified" }}</h6>
+                        <p class="mb-1">{{ exp.company or "Company not specified" }}</p>
+                        <small class="text-muted">{{ exp.duration or "Duration not specified" }}</small>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted">No experience added.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <h4 class="mb-0">Projects</h4>
+        </div>
+        <div class="card-body">
+            {% if resume.projects %}
+            <div class="row">
+                {% for proj in resume.projects %}
+                <div class="col-12 mb-3">
+                    <div class="border rounded p-3">
+                        <h6 class="fw-bold">{{ proj.title or "Project title not specified" }}</h6>
+                        <p class="mb-0">{{ proj.description or "Project description not provided" }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted">No projects listed.</p>
             {% endif %}
         </div>
     </div>

@@ -23,13 +23,57 @@
                 <p><strong>Full Name:</strong> {{ data.personal.fullName }}</p>
                 <p><strong>Email:</strong> {{ data.personal.email }}</p>
                 <p><strong>Phone:</strong> {{ data.personal.phone }}</p>
-                <p><strong>Summary:</strong> {{ data.personal.summary }}</p>
+                {% if data.personal.linkedin %}
+                <p><strong>LinkedIn:</strong> 
+                    {% if data.personal.linkedin is string %}
+                        {% if data.personal.linkedin.startswith('http') %}
+                            <a href="{{ data.personal.linkedin }}" target="_blank" class="text-decoration-none">{{ data.personal.linkedin }}</a>
+                        {% else %}
+                            <a href="https://linkedin.com/in/{{ data.personal.linkedin }}" target="_blank" class="text-decoration-none">{{ data.personal.linkedin }}</a>
+                        {% endif %}
+                    {% else %}
+                        {% if data.personal.linkedin.url %}
+                            <a href="{{ data.personal.linkedin.url }}" target="_blank" class="text-decoration-none">{{ data.personal.linkedin.display or 'LinkedIn' }}</a>
+                        {% elif data.personal.linkedin.display %}
+                            <a href="https://linkedin.com/in/{{ data.personal.linkedin.display }}" target="_blank" class="text-decoration-none">{{ data.personal.linkedin.display }}</a>
+                        {% endif %}
+                    {% endif %}
+                </p>
+                {% endif %}
+                {% if data.personal.github %}
+                <p><strong>GitHub:</strong> 
+                    {% if data.personal.github is string %}
+                        {% if data.personal.github.startswith('http') %}
+                            <a href="{{ data.personal.github }}" target="_blank" class="text-decoration-none">{{ data.personal.github }}</a>
+                        {% else %}
+                            <a href="https://github.com/{{ data.personal.github }}" target="_blank" class="text-decoration-none">{{ data.personal.github }}</a>
+                        {% endif %}
+                    {% else %}
+                        {% if data.personal.github.url %}
+                            <a href="{{ data.personal.github.url }}" target="_blank" class="text-decoration-none">{{ data.personal.github.display or 'GitHub' }}</a>
+                        {% elif data.personal.github.display %}
+                            <a href="https://github.com/{{ data.personal.github.display }}" target="_blank" class="text-decoration-none">{{ data.personal.github.display }}</a>
+                        {% endif %}
+                    {% endif %}
+                </p>
+                {% endif %}
             </div>
             {% else %}
             <p class="text-muted">No personal information available.</p>
             {% endif %}
         </div>
     </div>
+
+    {% if data.personal and data.personal.summary %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <h4 class="mb-0"><i class="bi bi-person-badge me-2"></i>Professional Summary</h4>
+        </div>
+        <div class="card-body">
+            <p class="mb-0" style="white-space: pre-wrap; line-height: 1.6; word-wrap: break-word; overflow-wrap: break-word;">{{ data.personal.summary }}</p>
+        </div>
+    </div>
+    {% endif %}
     <div class="row">
         <div class="col-md-6 mb-4">
             <div class="card shadow-sm">
